@@ -1,0 +1,164 @@
+syntax = "proto3";
+
+package simulation.v1;
+
+// This tells the protoc compiler exactly where to place the generated Go structs
+option go_package = "github.com/tinywideclouds/gen-sim/libs/schema/simulation/v1";
+
+// ---------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------
+
+enum DistributionType {
+  DISTRIBUTION_TYPE_UNSPECIFIED = 0;
+  DISTRIBUTION_TYPE_NORMAL = 1;
+  DISTRIBUTION_TYPE_UNIFORM = 2;
+  DISTRIBUTION_TYPE_CONSTANT = 3;
+}
+
+enum ConditionOperator {
+  CONDITION_OPERATOR_UNSPECIFIED = 0;
+  CONDITION_OPERATOR_EQ = 1;
+  CONDITION_OPERATOR_NEQ = 2;
+  CONDITION_OPERATOR_GT = 3;
+  CONDITION_OPERATOR_LT = 4;
+  CONDITION_OPERATOR_GTE = 5;
+  CONDITION_OPERATOR_LTE = 6;
+}
+
+enum DeviceCategory {
+  DEVICE_CATEGORY_UNSPECIFIED = 0;
+  DEVICE_CATEGORY_COOKING = 1;
+  DEVICE_CATEGORY_HEATING = 2;
+  DEVICE_CATEGORY_COLD_STORAGE = 3;
+  DEVICE_CATEGORY_LIGHTING = 4;
+  DEVICE_CATEGORY_WET_APPLIANCE = 5;
+  DEVICE_CATEGORY_ELECTRONICS = 6;
+  DEVICE_CATEGORY_BASE_LOAD = 7;
+}
+
+enum ProfileType {
+  PROFILE_TYPE_UNSPECIFIED = 0;
+  PROFILE_TYPE_CONSTANT = 1;
+  PROFILE_TYPE_CYCLIC = 2;    // e.g., Fridge compressor
+  PROFILE_TYPE_VARIABLE = 3;  // e.g., Washing machine cycles
+}
+
+enum TriggerType {
+  TRIGGER_TYPE_UNSPECIFIED = 0;
+  TRIGGER_TYPE_TIME_OF_DAY = 1;
+  TRIGGER_TYPE_EVENT_REACTION = 2;
+}
+
+enum DeviceState {
+  DEVICE_STATE_UNSPECIFIED = 0;
+  DEVICE_STATE_ON = 1;
+  DEVICE_STATE_OFF = 2;
+  DEVICE_STATE_STANDBY = 3;
+}
+
+// ---------------------------------------------------------
+// CORE PRIMITIVES & PROBABILITIES
+// ---------------------------------------------------------
+
+message EngineCondition {
+  string context_key = 1;          // e.g., "weather.external_temp_c", "time.is_weekend"
+  ConditionOperator operator = 2;
+  string value = 3;                // String representation, parsed by the Go engine
+}
+
+message DistributionModifier {
+  EngineCondition condition = 1;
+  string shift_mean = 2;           // e.g., "+30m"
+  string shift_value = 3;          // e.g., "*1.2"
+}
+
+message ProbabilityDistribution {
+  DistributionType type = 1;
+  string value = 2;                // For constant (e.g., "1.5")
+  string mean = 3;                 // For normal (e.g., "07:30" or "45")
+  string std_dev = 4;              // For normal (e.g., "15m" or "5")
+  double min = 5;                  // For uniform
+  double max = 6;                  // For uniform
+  
+  repeated DistributionModifier modifiers = 7;
+  string timeframe = 8
+}
+
+// ---------------------------------------------------------
+// BOUNDS & LIMITS
+// ---------------------------------------------------------
+
+message FatigueRule {
+  string lockout_duration = 1;      // e.g., "30m" (Hard block before it can run again)
+  string recovery_duration = 2;     // e.g., "2h" (Gradual return to normal probability)
+  double penalty_multiplier = 3;    // e.g., 0.1 (Drops a 50% chance to 5% during recovery)
+}
+
+// ---------------------------------------------------------
+// DOMAIN ENTITIES
+// ---------------------------------------------------------
+
+message DeviceTaxonomy {
+  DeviceCategory category = 1;
+  string class_name = 2;           // e.g., "fridge_freezer", "kettle", "hvac"
+}
+
+message DeviceProfile {
+  ProfileType type = 1;
+  double max_watts = 2;
+  double standby_watts = 3;
+  string cooldown_duration = 4;    // e.g., "5m" - Device lock preventing rapid cycling
+}
+
+message DeviceTemplate {
+  string device_id = 1;
+  DeviceTaxonomy taxonomy = 2;
+  map<string, string> specifics = 3; // e.g., {"energy_rating": "A", "volume_liters": "1.5"}
+  DeviceProfile electrical_profile = 4;
+}
+
+message Trigger {
+  TriggerType type = 1;
+  ProbabilityDistribution distribution = 2;
+  repeated EngineCondition base_conditions = 3;
+  FatigueRule fatigue_rule = 4;    // Prevents the "100 kettles" problem
+}
+
+message ScenarioAction {
+  string device_id = 1;
+  DeviceState state = 2;
+  string delay_from_start = 3;     // e.g., "5m"
+  
+  // Variables the Go physics engine needs (duration_minutes, water_volume_ml, etc.)
+  map<string, ProbabilityDistribution> parameters = 4; 
+}
+
+message ScenarioTemplate {
+  string scenario_id = 1;
+  string actor_id = 2;             // The intentional human actor driving this
+  Trigger trigger = 3;
+  repeated ScenarioAction actions = 4;
+}
+
+message ActorTemplate {
+  string actor_id = 1;
+  string type = 2;                 // e.g., "parent_1", "student"
+}
+
+// ---------------------------------------------------------
+// THE ROOT BLUEPRINT (THE NODE)
+// ---------------------------------------------------------
+
+message NodeArchetype {
+  string archetype_id = 1;
+  string description = 2;
+  
+  // Thermodynamic Properties for State-Driven Heating Models
+  double base_temp_c = 3;          // Unheated resting temp (driven by weather)
+  double insulation_decay_rate = 4;// Heat loss per hour (e.g., 0.1 for good, 0.5 for drafty)
+  
+  repeated ActorTemplate actors = 5;
+  repeated DeviceTemplate devices = 6;
+  repeated ScenarioTemplate scenarios = 7;
+}

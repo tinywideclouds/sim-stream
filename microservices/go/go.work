@@ -1,0 +1,9 @@
+go 1.26.1
+
+use (
+	./libs/physics
+	./libs/probability
+	./libs/schema
+	./services/simulator
+	./services/mqtt-bridge
+)

@@ -1,0 +1,11 @@
+# This file defines a "buf module", which is the basic unit of Protobuf
+# sources that buf works with.
+
+version: v1
+name: buf.build/types/protos
+breaking:
+  use:
+    - FILE
+lint:
+  use:
+    - DEFAULT

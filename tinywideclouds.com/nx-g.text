@@ -1,0 +1,6 @@
+
+nx g @nx/angular:library --name=data-targets-api --directory=libs/data-targets/api --tags="scope:data-targets"  
+
+
+
+nx g @nx/node:library --name=libs-sim-generator --directory=libs/sim/generator --tags="scope:generator"
