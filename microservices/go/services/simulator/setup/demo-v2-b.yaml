@@ -1,0 +1,188 @@
+archetype_id: "v2_family_home"
+description: "A V2 multi-agent house demonstrating friction, central heating, and baseline vampire draw."
+base_temp_c: 18.0
+insulation_decay_rate: 0.1
+
+grid:
+  nominal_voltage: 230.0
+  wave_center: 232.0
+  wave_amplitude: 6.0
+  peak_hour: 3.0
+  jitter_min: -3.5
+  jitter_max: 3.5
+
+devices:
+  - device_id: "fridge_1"
+    taxonomy:
+      category: 3 # Cold Storage
+      class_name: "fridge_freezer"
+    electrical_profile:
+      type: 1 
+      max_watts: 150.0
+      standby_watts: 15.0
+
+  - device_id: "broadband_router"
+    taxonomy:
+      category: 7 # Base Load
+      class_name: "router"
+    electrical_profile:
+      type: 1 
+      max_watts: 12.0
+      standby_watts: 12.0
+
+  - device_id: "shower_1"
+    taxonomy:
+      category: 5 # Wet Appliance
+      class_name: "electric_shower"
+    electrical_profile:
+      type: 1 
+      max_watts: 0.0 
+      standby_watts: 0.0
+    water_profile:
+      hot_lpm: 9.5
+      cold_lpm: 0.0
+
+  - device_id: "kettle_1"
+    taxonomy:
+      category: 1 # Cooking
+      class_name: "kettle"
+    electrical_profile:
+      type: 1 
+      max_watts: 3000.0
+      standby_watts: 1.5
+
+  - device_id: "central_heating"
+    taxonomy:
+      category: 2 # Space Heating
+      class_name: "electric_heater"
+    electrical_profile:
+      type: 1 
+      max_watts: 2000.0
+      standby_watts: 0.0
+
+  - device_id: "immersion_heater"
+    taxonomy:
+      category: 6 # Water Heating
+      class_name: "water_boiler"
+    electrical_profile:
+      type: 1 
+      max_watts: 3000.0
+      standby_watts: 0.0
+
+routine_templates:
+  - routine_id: "morning_prep"
+    description: "Shower, then coffee."
+    tasks:
+      - "morning_shower"
+      - "make_coffee"
+
+scenarios:
+  - scenario_id: "morning_shower"
+    actions:
+      - device_id: "shower_1"
+        state: 1 
+        parameters:
+          duration:
+            type: 1 
+            mean: "8m"
+            std_dev: "2m"
+
+  - scenario_id: "make_coffee"
+    actions:
+      - device_id: "kettle_1"
+        state: 1 
+        parameters:
+          duration:
+            type: 3 
+            value: "5m"
+
+  - scenario_id: "thermostat_heat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2 
+      base_conditions:
+        - context_key: "indoor_temp_c"
+          operator: 4 # Lt (Less Than)
+          value: "16.5"
+      fatigue_rule:
+        lockout_duration: "30m" 
+    actions:
+      - device_id: "central_heating"
+        state: 1
+        parameters:
+          duration:
+            type: 3
+            value: "20m"
+
+  - scenario_id: "tank_thermostat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions:
+        - context_key: "tank_temp_c"
+          operator: 4 # Lt (Less Than)
+          value: "45.0"
+      fatigue_rule:
+        lockout_duration: "60m" # Gives it time to reach temp without rapid cycling
+    actions:
+      - device_id: "immersion_heater"
+        state: 1
+        parameters:
+          duration:
+            type: 3
+            value: "45m" # 3000W running for 45 mins will heat the 150L tank up by ~13 degrees!
+
+  - scenario_id: "fridge_compressor"
+    actor_tags: ["system"]
+    trigger:
+      type: 2 
+      base_conditions: [] 
+      fatigue_rule:
+        lockout_duration: "45m" 
+    actions:
+      - device_id: "fridge_1"
+        state: 1 
+        parameters:
+          duration:
+            type: 3 
+            value: "15m"
+
+actors:
+  - actor_id: "parent_1"
+    type: "adult"
+    routines:
+      - routine_id: "morning_prep"
+        trigger:
+          type: 1 
+          mean: "07h00m"
+          std_dev: "5m"
+        deadline:
+          type: 1 
+          mean: "08h00m"
+          std_dev: "2m"
+
+  - actor_id: "teenager_1"
+    type: "teen"
+    routines:
+      - routine_id: "morning_prep"
+        trigger:
+          type: 1 
+          mean: "07h15m"
+          std_dev: "25m"
+        deadline:
+          type: 1 
+          mean: "08h15m"
+          std_dev: "5m"
+
+  - actor_id: "house_system"
+    type: "system"
+    routines: []
+
+collective_events:
+  - event_id: "school_run"
+    lead_actor: "teenager_1"
+    dependent_actors: 
+      - actor_id: "parent_1"
+        friction_weight: 0.8  
+        patience_limit: "10m" 
+    action: "morning_prep"

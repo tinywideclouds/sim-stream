@@ -12,35 +12,35 @@ import (
 
 const (
 	mqttBroker = "tcp://127.0.0.1:1883"
-	mqttTopic  = "homeassistant/#" // The wildcard '#' grabs everything under 'homeassistant'
+	mqttTopic  = "zigbee2mqtt/#" // <-- We are now intercepting Z2M directly
 )
 
 func main() {
-	// 1. Define what happens when a message arrives
+	// 1. Define what happens when raw Z2M data arrives
 	var messageHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-		fmt.Printf("Topic: %s\nPayload: %s\n---\n", msg.Topic(), string(msg.Payload()))
+		// Z2M topics usually look like "zigbee2mqtt/Friendly_Name"
+		fmt.Printf("Source: %s\nPayload: %s\n---\n", msg.Topic(), string(msg.Payload()))
 	}
 
-	// 2. Set up the connection options
+	// 2. Set up connection
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(mqttBroker)
-	opts.SetClientID("go_local_logger")
+	opts.SetClientID("go_z2m_direct_listener")
 	opts.SetDefaultPublishHandler(messageHandler)
 
-	// 3. Connect to Mosquitto
+	// 3. Connect to the Mosquitto broker
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		log.Fatalf("Failed to connect to Mosquitto: %v", token.Error())
 	}
-	fmt.Println("Connected to local Mosquitto broker!")
+	fmt.Println("Connected! Intercepting raw Zigbee2MQTT data...")
 
-	// 4. Subscribe to the stream
+	// 4. Subscribe to the Z2M firehose
 	if token := client.Subscribe(mqttTopic, 0, nil); token.Wait() && token.Error() != nil {
 		log.Fatalf("Failed to subscribe: %v", token.Error())
 	}
-	fmt.Printf("Subscribed to: %s\nWaiting for Home Assistant data...\n---\n", mqttTopic)
 
-	// 5. Keep the program running until you press Ctrl+C
+	// 5. Keep running until Ctrl+C
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 	<-sigChan
