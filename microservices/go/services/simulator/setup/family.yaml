@@ -1,0 +1,240 @@
+archetype_id: "family_001"
+description: "A bustling family of four. High water usage, synchronized evening dinner and TV, and scattered bedtime."
+base_temp_c: 18.0
+insulation_decay_rate: 0.1
+
+grid:
+  nominal_voltage: 230.0
+  wave_center: 232.0
+  wave_amplitude: 5.0
+  peak_hour: 4.0
+  jitter_min: -2.0
+  jitter_max: 2.0
+
+devices:
+  - device_id: "fridge_1"
+    taxonomy: { category: 3 }
+    electrical_profile: { type: 1, max_watts: 150.0, standby_watts: 15.0 }
+  - device_id: "broadband_router"
+    taxonomy: { category: 7 }
+    electrical_profile: { type: 1, max_watts: 12.0, standby_watts: 12.0 }
+  - device_id: "shower_1"
+    taxonomy: { category: 5 }
+    electrical_profile: { type: 1, max_watts: 0.0, standby_watts: 0.0 }
+    water_profile: { hot_lpm: 9.5, cold_lpm: 0.0 }
+  - device_id: "washing_machine"
+    taxonomy: { category: 5 }
+    electrical_profile: { type: 1, max_watts: 2000.0, standby_watts: 2.0 }
+    water_profile: { hot_lpm: 0.0, cold_lpm: 2.5 }
+  - device_id: "kettle_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 3000.0, standby_watts: 1.5 }
+  - device_id: "microwave_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 1200.0, standby_watts: 3.0 }
+  - device_id: "cooker_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 3500.0, standby_watts: 2.0 } # Big family oven
+  - device_id: "big_tv"
+    taxonomy: { category: 4 }
+    electrical_profile: { type: 1, max_watts: 200.0, standby_watts: 10.0 }
+  - device_id: "central_heating"
+    taxonomy: { category: 2 }
+    electrical_profile: { type: 1, max_watts: 2000.0, standby_watts: 0.0 }
+  - device_id: "immersion_heater"
+    taxonomy: { category: 6 }
+    electrical_profile: { type: 1, max_watts: 3000.0, standby_watts: 0.0 }
+
+routine_templates:
+  - routine_id: "morning_chaos"
+    tasks: ["quick_shower", "make_coffee"]
+  - routine_id: "kids_morning"
+    tasks: ["quick_shower"]
+  - routine_id: "do_chores"
+    tasks: ["run_laundry"]
+  - routine_id: "sah_lunch"
+    tasks: ["quick_microwave"]
+  - routine_id: "after_school_snack"
+    tasks: ["quick_microwave", "make_coffee"]
+  - routine_id: "family_dinner"
+    tasks: ["cook_dinner"]
+  - routine_id: "family_tv"
+    tasks: ["watch_tv"]
+  - routine_id: "adult_wind_down"
+    tasks: ["make_coffee"] # A late cup of tea while kids are asleep
+
+scenarios:
+  - scenario_id: "quick_shower"
+    actions:
+      - device_id: "shower_1"
+        state: 1 
+        parameters: { duration: { type: 1, mean: "8m", std_dev: "2m" } }
+  - scenario_id: "make_coffee"
+    actions:
+      - device_id: "kettle_1"
+        state: 1 
+        parameters: { duration: { type: 3, value: "4m" } }
+  - scenario_id: "run_laundry"
+    actions:
+      - device_id: "washing_machine"
+        state: 1 
+        parameters: { duration: { type: 1, mean: "90m", std_dev: "10m" } }
+  - scenario_id: "quick_microwave"
+    actions:
+      - device_id: "microwave_1"
+        state: 1 
+        parameters: { duration: { type: 1, mean: "4m", std_dev: "1m" } }
+  - scenario_id: "cook_dinner"
+    actions:
+      - device_id: "cooker_1"
+        state: 1 
+        parameters: { duration: { type: 1, mean: "45m", std_dev: "10m" } }
+  - scenario_id: "watch_tv"
+    actions:
+      - device_id: "big_tv"
+        state: 1 
+        parameters: { duration: { type: 1, mean: "1h30m", std_dev: "15m" } }
+
+  # Ambient Systems
+  - scenario_id: "thermostat_heat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2 
+      base_conditions:
+        - { context_key: "indoor_temp_c", operator: 4, value: "18.0" }
+      fatigue_rule: { lockout_duration: "30m" }
+    actions:
+      - device_id: "central_heating"
+        state: 1
+        parameters: { duration: { type: 3, value: "20m" } }
+  - scenario_id: "tank_thermostat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions:
+        - { context_key: "tank_temp_c", operator: 4, value: "40.0" }
+      fatigue_rule: { lockout_duration: "60m" }
+    actions:
+      - device_id: "immersion_heater"
+        state: 1
+        parameters: { duration: { type: 3, value: "45m" } }
+  - scenario_id: "fridge_compressor"
+    actor_tags: ["system"]
+    trigger:
+      type: 2 
+      base_conditions: [] 
+      fatigue_rule: { lockout_duration: "45m" }
+    actions:
+      - device_id: "fridge_1"
+        state: 1 
+        parameters: { duration: { type: 3, value: "15m" } }
+
+actors:
+  - actor_id: "working_parent"
+    type: "adult"
+    routines:
+      - routine_id: "morning_chaos"
+        trigger: { type: 1, mean: "06h30m", std_dev: "10m" }
+        deadline: { type: 1, mean: "07h30m", std_dev: "5m" }
+      # Away at work all day
+      - routine_id: "family_dinner"
+        trigger: { type: 1, mean: "18h00m", std_dev: "15m" }
+        deadline: { type: 1, mean: "19h00m", std_dev: "10m" }
+      - routine_id: "family_tv"
+        trigger: { type: 1, mean: "19h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "20h30m", std_dev: "10m" }
+      - routine_id: "adult_wind_down"
+        trigger: { type: 1, mean: "22h00m", std_dev: "20m" }
+        deadline: { type: 1, mean: "23h00m", std_dev: "15m" }
+
+  - actor_id: "sah_parent"
+    type: "adult"
+    routines:
+      - routine_id: "morning_chaos"
+        trigger: { type: 1, mean: "07h00m", std_dev: "15m" }
+        deadline: { type: 1, mean: "08h00m", std_dev: "10m" }
+      - routine_id: "do_chores"
+        trigger: { type: 1, mean: "09h30m", std_dev: "30m" }
+        deadline: { type: 1, mean: "12h00m", std_dev: "15m" }
+      - routine_id: "sah_lunch"
+        trigger: { type: 1, mean: "12h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "13h30m", std_dev: "10m" }
+      - routine_id: "after_school_snack"
+        trigger: { type: 1, mean: "15h30m", std_dev: "10m" }
+        deadline: { type: 1, mean: "16h30m", std_dev: "10m" }
+      - routine_id: "family_dinner"
+        trigger: { type: 1, mean: "17h30m", std_dev: "30m" } # SAH Parent starts cooking early!
+        deadline: { type: 1, mean: "19h00m", std_dev: "10m" }
+      - routine_id: "family_tv"
+        trigger: { type: 1, mean: "19h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "20h30m", std_dev: "10m" }
+      - routine_id: "adult_wind_down"
+        trigger: { type: 1, mean: "22h00m", std_dev: "20m" }
+        deadline: { type: 1, mean: "23h00m", std_dev: "15m" }
+
+  - actor_id: "child_1"
+    type: "child"
+    routines:
+      - routine_id: "kids_morning"
+        trigger: { type: 1, mean: "07h15m", std_dev: "10m" }
+        deadline: { type: 1, mean: "08h00m", std_dev: "5m" }
+      - routine_id: "after_school_snack"
+        trigger: { type: 1, mean: "15h45m", std_dev: "10m" }
+        deadline: { type: 1, mean: "16h30m", std_dev: "10m" }
+      - routine_id: "family_dinner"
+        trigger: { type: 1, mean: "18h00m", std_dev: "15m" }
+        deadline: { type: 1, mean: "19h00m", std_dev: "10m" }
+      - routine_id: "family_tv"
+        trigger: { type: 1, mean: "19h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "20h30m", std_dev: "10m" }
+
+  - actor_id: "child_2"
+    type: "child"
+    routines:
+      - routine_id: "kids_morning"
+        trigger: { type: 1, mean: "07h30m", std_dev: "10m" }
+        deadline: { type: 1, mean: "08h00m", std_dev: "5m" }
+      - routine_id: "after_school_snack"
+        trigger: { type: 1, mean: "15h45m", std_dev: "10m" }
+        deadline: { type: 1, mean: "16h30m", std_dev: "10m" }
+      - routine_id: "family_dinner"
+        trigger: { type: 1, mean: "18h00m", std_dev: "15m" }
+        deadline: { type: 1, mean: "19h00m", std_dev: "10m" }
+      - routine_id: "family_tv"
+        trigger: { type: 1, mean: "19h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "20h30m", std_dev: "10m" }
+
+  - actor_id: "house_system"
+    type: "system"
+    routines: []
+
+collective_events:
+  # The SAH Parent is leading the dinner schedule
+  - event_id: "big_family_dinner"
+    lead_actor: "sah_parent"
+    dependent_actors: 
+      - actor_id: "working_parent"
+        friction_weight: 0.8  
+        patience_limit: "15m" 
+      - actor_id: "child_1"
+        friction_weight: 0.5  
+        patience_limit: "10m" 
+      - actor_id: "child_2"
+        friction_weight: 0.5  
+        patience_limit: "10m" 
+    action: "family_dinner"
+
+  # The children pull the TV time slightly earlier, but parents have heavy weight
+  - event_id: "movie_night"
+    lead_actor: "working_parent"
+    dependent_actors: 
+      - actor_id: "sah_parent"
+        friction_weight: 1.0  
+        patience_limit: "30m" 
+      - actor_id: "child_1"
+        friction_weight: 0.4  
+        patience_limit: "5m" 
+      - actor_id: "child_2"
+        friction_weight: 0.4  
+        patience_limit: "5m" 
+    action: "family_tv"

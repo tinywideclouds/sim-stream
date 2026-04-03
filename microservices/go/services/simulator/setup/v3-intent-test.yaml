@@ -1,0 +1,324 @@
+archetype_id: experiment_02
+description: 'Compiled V3 Topography - Strategy: burn-in'
+base_temp_c: 18
+insulation_decay_rate: 0.1
+grid: null
+water_system: null
+devices:
+    - device_id: shower_1
+      taxonomy:
+        category: 0
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 8500
+        standby_watts: 0
+        cooldown_duration: ""
+      water_profile:
+        cold_lpm: 4
+        hot_lpm: 6
+    - device_id: cooker_1
+      taxonomy:
+        category: 0
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 3000
+        standby_watts: 0
+        cooldown_duration: ""
+      water_profile: null
+scenarios: []
+actors:
+    - actor_id: stressed_worker
+      type: adult
+      ai_model: utility
+      routines: []
+      starting_meters:
+        energy: 30
+        hunger: 96
+        hygiene: 90
+        leisure: 80
+        work_duty: 100
+      softmax_temperature: 0.2
+routine_templates: []
+collective_events: []
+meters:
+    - meter_id: energy
+      max: 100
+      base_decay_per_hour: 6
+      curve: linear
+    - meter_id: hunger
+      max: 100
+      base_decay_per_hour: 8
+      curve: exponential
+    - meter_id: hygiene
+      max: 100
+      base_decay_per_hour: 5
+      curve: s_curve
+    - meter_id: work_duty
+      max: 100
+      base_decay_per_hour: 4.166
+      curve: linear
+    - meter_id: leisure
+      max: 100
+      base_decay_per_hour: 15
+      curve: exponential
+actions:
+    - action_id: sleep_in_bed
+      actor_tags: []
+      device_id: ""
+      satisfies:
+        energy:
+            amount: 20
+            curve: ease_in
+        leisure:
+            amount: 15
+            curve: linear
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 16
+          width: 5
+          magnitude: -50
+        - context_key: time.hour_float
+          peak: 2
+          width: 5
+          magnitude: 60
+      interruptible: true
+      initiation_friction: 15
+      expected_meters: {}
+      duration:
+        type: 1
+        value: ""
+        timeframe: ""
+        mean: 90m
+        std_dev: 15m
+        min: 0
+        max: 0
+        modifiers: []
+    - action_id: commute_to_work
+      actor_tags: []
+      device_id: ""
+      satisfies: {}
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 7.75
+          width: 0.5
+          magnitude: 75
+      interruptible: false
+      initiation_friction: 20
+      expected_meters: {}
+      duration:
+        type: 3
+        value: 45m
+        timeframe: ""
+        mean: ""
+        std_dev: ""
+        min: 0
+        max: 0
+        modifiers: []
+    - action_id: do_work_shift
+      actor_tags: []
+      device_id: ""
+      satisfies:
+        hunger:
+            amount: 30
+            curve: linear
+        leisure:
+            amount: 20
+            curve: linear
+        work_duty:
+            amount: 99.984
+            curve: linear
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 8.75
+          width: 0.3
+          magnitude: 112.5
+      interruptible: false
+      initiation_friction: 5
+      expected_meters: {}
+      duration:
+        type: 3
+        value: 8h
+        timeframe: ""
+        mean: ""
+        std_dev: ""
+        min: 0
+        max: 0
+        modifiers: []
+    - action_id: relax_on_sofa
+      actor_tags: []
+      device_id: ""
+      satisfies:
+        leisure:
+            amount: 40
+            curve: ease_out
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves: []
+      interruptible: true
+      initiation_friction: 0
+      expected_meters: {}
+      duration:
+        type: 3
+        value: 15m
+        timeframe: ""
+        mean: ""
+        std_dev: ""
+        min: 0
+        max: 0
+        modifiers: []
+    - action_id: take_quick_shower
+      actor_tags: []
+      device_id: shower_1
+      satisfies:
+        hygiene:
+            amount: 80
+            curve: ease_out
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 3
+          width: 1.5
+          magnitude: -60
+      interruptible: true
+      initiation_friction: 0
+      expected_meters: {}
+      duration:
+        type: 1
+        value: ""
+        timeframe: ""
+        mean: 10m
+        std_dev: 2m
+        min: 0
+        max: 0
+        modifiers: []
+    - action_id: grab_snack
+      actor_tags: []
+      device_id: ""
+      satisfies:
+        energy:
+            amount: 5
+            curve: linear
+        hunger:
+            amount: 15
+            curve: linear
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 3
+          width: 1.5
+          magnitude: -80
+      interruptible: false
+      initiation_friction: 0.5
+      expected_meters: {}
+      duration:
+        type: 3
+        value: 5m
+        timeframe: ""
+        mean: ""
+        std_dev: ""
+        min: 0
+        max: 0
+        modifiers: []
+    - action_id: cook_breakfast
+      actor_tags: []
+      device_id: cooker_1
+      satisfies:
+        energy:
+            amount: 15
+            curve: linear
+        hunger:
+            amount: 100
+            curve: linear
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 3
+          width: 1.5
+          magnitude: -80
+        - context_key: time.hour_float
+          peak: 8
+          width: 1.5
+          magnitude: 40
+      interruptible: false
+      initiation_friction: 25
+      expected_meters: {}
+      duration:
+        type: 1
+        value: ""
+        timeframe: ""
+        mean: 20m
+        std_dev: 4m
+        min: 0
+        max: 0
+        modifiers: []
+    - action_id: cook_dinner
+      actor_tags: []
+      device_id: cooker_1
+      satisfies:
+        energy:
+            amount: 10
+            curve: linear
+        hunger:
+            amount: 100
+            curve: linear
+      costs: {}
+      produces: {}
+      requires: {}
+      available_when: []
+      modifiers: []
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 3
+          width: 1.5
+          magnitude: -80
+        - context_key: time.hour_float
+          peak: 19
+          width: 2.5
+          magnitude: 45
+      interruptible: false
+      initiation_friction: 20
+      expected_meters: {}
+      duration:
+        type: 1
+        value: ""
+        timeframe: ""
+        mean: 35m
+        std_dev: 5m
+        min: 0
+        max: 0
+        modifiers: []
+alarms: []

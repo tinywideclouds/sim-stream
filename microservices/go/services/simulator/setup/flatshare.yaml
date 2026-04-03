@@ -1,0 +1,170 @@
+profile: "Two young professionals. One commutes early, the other works from home. They are stingy with heating to save money, so the thermostat is set to a freezing 14.5°C, but they run high-wattage PCs and clash for the shower."
+archetype_id: "flatshare_001"
+description: "Two young adults. Commuter skips breakfast. WFH takes breaks. Late night TV after dinner out."
+base_temp_c: 15.0
+insulation_decay_rate: 0.15 # Drafty apartment
+
+grid:
+  nominal_voltage: 230.0
+  wave_center: 230.0
+  wave_amplitude: 4.0
+  peak_hour: 4.0
+  jitter_min: -1.0
+  jitter_max: 1.0
+
+devices:
+  - device_id: "shower_1"
+    taxonomy: { category: 5 }
+    electrical_profile: { type: 1, max_watts: 0.0, standby_watts: 0.0 }
+    water_profile: { hot_lpm: 12.0, cold_lpm: 0.0 } # High pressure shower
+  - device_id: "kettle_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 2500.0, standby_watts: 0.0 }
+  - device_id: "toaster_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 900.0, standby_watts: 0.0 }
+  - device_id: "cooker_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 2500.0, standby_watts: 2.0 }
+  - device_id: "big_tv"
+    taxonomy: { category: 4 }
+    electrical_profile: { type: 1, max_watts: 150.0, standby_watts: 5.0 }
+  - device_id: "wfh_workstation"
+    taxonomy: { category: 7 }
+    electrical_profile: { type: 1, max_watts: 350.0, standby_watts: 5.0 } 
+  - device_id: "central_heating"
+    taxonomy: { category: 2 }
+    electrical_profile: { type: 1, max_watts: 2000.0, standby_watts: 0.0 }
+  - device_id: "immersion_heater"
+    taxonomy: { category: 6 }
+    electrical_profile: { type: 1, max_watts: 3000.0, standby_watts: 0.0 }
+
+routine_templates:
+  - routine_id: "commuter_morning"
+    tasks: ["long_shower"] # Out the door, grabs breakfast at the station
+  - routine_id: "wfh_morning"
+    tasks: ["quick_shower", "make_coffee"]
+  - routine_id: "wfh_snack"
+    tasks: ["make_toast", "make_coffee"]
+  - routine_id: "wfh_lunch"
+    tasks: ["quick_lunch", "make_coffee"]
+  - routine_id: "wfh_work_block"
+    tasks: ["work_on_pc"]
+  - routine_id: "late_night_chill"
+    tasks: ["watch_tv"]
+
+scenarios:
+  - scenario_id: "long_shower"
+    actions:
+      - device_id: "shower_1"
+        state: 1
+        parameters: { duration: { type: 1, mean: "15m", std_dev: "3m" } }
+  - scenario_id: "quick_shower"
+    actions:
+      - device_id: "shower_1"
+        state: 1
+        parameters: { duration: { type: 1, mean: "5m", std_dev: "1m" } }
+  - scenario_id: "make_coffee"
+    actions:
+      - device_id: "kettle_1"
+        state: 1
+        parameters: { duration: { type: 3, value: "4m" } }
+  - scenario_id: "make_toast"
+    actions:
+      - device_id: "toaster_1"
+        state: 1
+        parameters: { duration: { type: 3, value: "3m" } }
+  - scenario_id: "quick_lunch"
+    actions:
+      - device_id: "cooker_1"
+        state: 1
+        parameters: { duration: { type: 1, mean: "15m", std_dev: "5m" } }
+  - scenario_id: "work_on_pc"
+    actions:
+      - device_id: "wfh_workstation"
+        state: 1
+        # Broken into ~2.5 hour blocks so they can take breaks!
+        parameters: { duration: { type: 1, mean: "2h30m", std_dev: "15m" } } 
+  - scenario_id: "watch_tv"
+    actions:
+      - device_id: "big_tv"
+        state: 1
+        parameters: { duration: { type: 1, mean: "1h30m", std_dev: "20m" } }
+
+  # Stingy Thermostat: Only kicks in if the house drops below 14.5C!
+  - scenario_id: "stingy_thermostat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions:
+        - context_key: "indoor_temp_c"
+          operator: 4 
+          value: "14.5"
+      fatigue_rule: { lockout_duration: "45m" }
+    actions:
+      - device_id: "central_heating"
+        state: 1
+        parameters: { duration: { type: 3, value: "15m" } }
+
+  - scenario_id: "tank_thermostat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions:
+        - context_key: "tank_temp_c"
+          operator: 4
+          value: "40.0"
+      fatigue_rule: { lockout_duration: "60m" }
+    actions:
+      - device_id: "immersion_heater"
+        state: 1
+        parameters: { duration: { type: 3, value: "45m" } }
+
+actors:
+  - actor_id: "commuter_1"
+    type: "adult"
+    routines:
+      - routine_id: "commuter_morning"
+        trigger: { type: 1, mean: "06h30m", std_dev: "10m" }
+        deadline: { type: 1, mean: "07h30m", std_dev: "5m" }
+      - routine_id: "late_night_chill"
+        trigger: { type: 1, mean: "22h30m", std_dev: "20m" } # 10:30 PM
+        deadline: { type: 1, mean: "23h30m", std_dev: "15m" }
+
+  - actor_id: "wfh_worker"
+    type: "adult"
+    routines:
+      - routine_id: "wfh_morning"
+        trigger: { type: 1, mean: "08h00m", std_dev: "20m" }
+        deadline: { type: 1, mean: "09h00m", std_dev: "5m" }
+      - routine_id: "wfh_work_block" # Morning sprint
+        trigger: { type: 1, mean: "08h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "11h00m", std_dev: "15m" }
+      - routine_id: "wfh_snack" # Toast and coffee!
+        trigger: { type: 1, mean: "11h00m", std_dev: "15m" }
+        deadline: { type: 1, mean: "11h45m", std_dev: "10m" }
+      - routine_id: "wfh_work_block" # Mid-day sprint
+        trigger: { type: 1, mean: "11h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "13h30m", std_dev: "15m" }
+      - routine_id: "wfh_lunch" # Quick cooker use
+        trigger: { type: 1, mean: "13h30m", std_dev: "20m" }
+        deadline: { type: 1, mean: "14h30m", std_dev: "10m" }
+      - routine_id: "wfh_work_block" # Afternoon sprint
+        trigger: { type: 1, mean: "14h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "17h30m", std_dev: "30m" }
+      - routine_id: "late_night_chill"
+        trigger: { type: 1, mean: "22h30m", std_dev: "20m" } # 10:30 PM
+        deadline: { type: 1, mean: "23h30m", std_dev: "15m" }
+
+  - actor_id: "house_system"
+    type: "system"
+    routines: []
+
+collective_events:
+  - event_id: "post_dinner_tv"
+    lead_actor: "commuter_1"
+    dependent_actors: 
+      - actor_id: "wfh_worker"
+        friction_weight: 0.5  # They compromise evenly on when to hit the couch
+        patience_limit: "20m" 
+    action: "late_night_chill"

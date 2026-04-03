@@ -1,15 +1,19 @@
+// runsim.go
 package main
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 
+	"github.com/tinywideclouds/go-power-simulator/internal/aiengine"
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
 	mock_engine "github.com/tinywideclouds/go-power-simulator/mock/engine"
 	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
@@ -17,10 +21,16 @@ import (
 )
 
 func main() {
-	fmt.Println("Starting V2 Multi-Agent Simulation with Pluggable Grid Physics...")
+	// NEW: Add CLI flags for flexible compiler testing
+	inFile := flag.String("in", "setup/v3-intent-test.yaml", "Path to input YAML")
+	outFile := flag.String("out", "v3_intent_results.csv", "Path to output CSV")
+	burnInHours := flag.Float64("burn-in", 0.0, "Hours to simulate invisibly to settle initial conditions")
+	simDays := flag.Float64("days", 1.0, "Days to record to CSV after burn-in")
+	flag.Parse()
 
-	// 1. Read the V2 Blueprint
-	yamlFile, err := os.ReadFile("setup/demo-v2.yaml")
+	fmt.Printf("Starting Pipeline Simulation...\nInput: %s\nBurn-in: %.1fh | Recording: %.1fd\n", *inFile, *burnInHours, *simDays)
+
+	yamlFile, err := os.ReadFile(*inFile)
 	if err != nil {
 		log.Fatalf("Failed to read YAML: %v", err)
 	}
@@ -28,33 +38,24 @@ func main() {
 	var blueprint domain.NodeArchetype
 	err = yaml.Unmarshal(yamlFile, &blueprint)
 	if err != nil {
-		log.Fatalf("Failed to unmarshal V2 YAML: %v", err)
+		log.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
 
-	// 2. Initialize the V2 Brain & RNG
 	var seed [32]byte
-	seed[0] = 42
-
+	rand.Seed(time.Now().UnixNano())
+	rand.Read(seed[:])
 	sampler := generator.NewSampler(seed)
-	scheduler := engine.NewScheduler(sampler)
-	negotiator := engine.NewNegotiator()
-	executor := engine.NewExecutor(sampler)
 
-	// NEW: Create the grid dynamically from the parsed YAML!
+	utilityBrain := aiengine.NewUtilityEngine(sampler)
+	orchestrator := aiengine.NewOrchestrator(utilityBrain, sampler)
+
 	grid := engine.NewConfigurableGrid(blueprint.Grid, sampler)
+	weather := &mock_engine.MockWeather{StaticTempC: 5.0}
 
-	// Set Rollover to 4:00 AM
-	orchestrator := engine.NewOrchestrator(scheduler, negotiator, executor, 4)
-
-	// 3. Initialize the House Memory (Starts strictly at Midnight)
 	startTime := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	state := engine.NewSimulationState(&blueprint, startTime)
 
-	// Inject our MockWeather (5.0C day, 0.0C night)
-	weather := &mock_engine.MockWeather{StaticTempC: 5.0}
-
-	// 4. Setup CSV Output
-	csvFile, err := os.Create("v2_results.csv")
+	csvFile, err := os.Create(*outFile)
 	if err != nil {
 		log.Fatalf("Failed to create CSV: %v", err)
 	}
@@ -63,41 +64,41 @@ func main() {
 	writer := csv.NewWriter(csvFile)
 	defer writer.Flush()
 
-	// Write CSV Headers including the new GridVoltage
 	writer.Write([]string{
 		"Timestamp",
-		"GridVoltage",
-		"TotalWatts",
-		"HotWaterLiters",
-		"TankTempC",
-		"IndoorTempC",
 		"ActiveDevices",
 		"ActiveActors",
+		"Anomalies",
+		"Debug",
 	})
 
-	// 5. Run the Master Loop (24 hours at 15-second intervals)
 	tickDuration := 15 * time.Second
-	totalTicks := (24 * time.Hour) / tickDuration
-
-	fmt.Printf("Simulating %d ticks...\n", totalTicks)
+	burnInDuration := time.Duration(*burnInHours * float64(time.Hour))
+	recordDuration := time.Duration(*simDays * 24.0 * float64(time.Hour))
+	totalDuration := burnInDuration + recordDuration
+	totalTicks := totalDuration / tickDuration
 
 	for i := 0; i < int(totalTicks); i++ {
-		// Pass the dynamically configured Grid directly into the tick!
 		result := orchestrator.Tick(state, tickDuration, weather, grid)
 
-		// UNFILTERED LOGGING: Write every single 15-second tick to the CSV
-		row := []string{
-			result.Timestamp.Format(time.RFC3339),
-			fmt.Sprintf("%.2f", result.GridVoltage),
-			fmt.Sprintf("%.2f", result.TotalWatts),
-			fmt.Sprintf("%.2f", result.TotalHotLiters),
-			fmt.Sprintf("%.2f", result.TankTempC),
-			fmt.Sprintf("%.2f", result.IndoorTempC),
-			strings.Join(result.ActiveDevices, " | "),
-			strings.Join(result.ActiveActors, " | "),
-		}
-		writer.Write(row)
-	}
+		// NEW: Only record to CSV if we have passed the burn-in period
+		elapsed := state.SimTime.Sub(startTime)
+		if elapsed >= burnInDuration {
+			var validAnomalies []string
+			for _, a := range result.Anomalies {
+				if a != "" {
+					validAnomalies = append(validAnomalies, a)
+				}
+			}
 
-	fmt.Println("Done! Results written to v2_results.csv")
+			writer.Write([]string{
+				result.Timestamp.Format("15:04:05"),
+				strings.Join(result.ActiveDevices, "|"),
+				strings.Join(result.ActiveActors, "|"),
+				strings.Join(validAnomalies, "|"),
+				strings.Join(result.DebugLog, " | "),
+			})
+		}
+	}
+	fmt.Println("Simulation Complete.")
 }

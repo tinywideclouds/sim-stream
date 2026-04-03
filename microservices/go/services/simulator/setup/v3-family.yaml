@@ -1,0 +1,289 @@
+archetype_id: "v3_emergent_family"
+description: "A comprehensive V3 family simulation with frustration anomalies and nuanced daily routines."
+base_temp_c: 18.0
+insulation_decay_rate: 0.1
+
+grid:
+  nominal_voltage: 230.0
+  wave_center: 232.0
+  wave_amplitude: 5.0
+  peak_hour: 4.0
+
+water_system:
+  tank_capacity_liters: 150.0
+  mains_water_temp_celsius: 10.0
+  max_tank_temp_celsius: 60.0
+  standby_temperature_loss_tick: 0.002
+
+devices:
+  - device_id: "fridge_1"
+    taxonomy: { category: 3 }
+    electrical_profile: { type: 1, max_watts: 150.0, standby_watts: 15.0 }
+  - device_id: "shower_1"
+    taxonomy: { category: 5 }
+    electrical_profile: { type: 1, max_watts: 0.0, standby_watts: 0.0 }
+    water_profile: { hot_lpm: 9.5, cold_lpm: 0.0 }
+  - device_id: "washing_machine"
+    taxonomy: { category: 5 }
+    electrical_profile: { type: 1, max_watts: 2000.0, standby_watts: 2.0 }
+    water_profile: { hot_lpm: 0.0, cold_lpm: 2.5 }
+  - device_id: "microwave_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 1200.0, standby_watts: 3.0 }
+  - device_id: "cooker_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 3500.0, standby_watts: 2.0 }
+  - device_id: "big_tv"
+    taxonomy: { category: 4 }
+    electrical_profile: { type: 1, max_watts: 200.0, standby_watts: 10.0 }
+  - device_id: "central_heating"
+    taxonomy: { category: 2 }
+    electrical_profile: { type: 1, max_watts: 2000.0, standby_watts: 0.0 }
+  - device_id: "immersion_heater"
+    taxonomy: { category: 6 }
+    electrical_profile: { type: 1, max_watts: 3000.0, standby_watts: 0.0 }
+
+alarms:
+  - alarm_id: "morning_rise"
+    time: "07:00"
+    duration: "45m"
+
+meters:
+  - meter_id: "energy"
+    max: 100.0
+    base_decay_per_hour: 6.25
+    curve: "linear"
+  - meter_id: "hunger"
+    max: 100.0
+    base_decay_per_hour: 15.0
+    curve: "exponential"
+  - meter_id: "hygiene"
+    max: 100.0
+    base_decay_per_hour: 5.0
+    curve: "linear"
+  - meter_id: "entertainment"
+    max: 100.0
+    base_decay_per_hour: 8.0
+    curve: "linear"
+  - meter_id: "work_duty"
+    max: 100.0
+    base_decay_per_hour: 12.0
+    curve: "exponential"
+  - meter_id: "school_duty"
+    max: 100.0
+    base_decay_per_hour: 15.0
+    curve: "exponential"
+  - meter_id: "chore_duty"
+    max: 100.0
+    base_decay_per_hour: 10.0
+    curve: "linear"
+
+actions:
+  # STAGGERED SLEEP
+  - action_id: "child_sleep"
+    actor_tags: ["child"]
+    interruptible: true
+    satisfies: { energy: 100.0 }
+    bonus_curves:
+      - { context_key: "time.hour", peak: 2.0, width: 4.0, magnitude: 200.0 }
+    duration: { type: 3, value: "8h" }
+
+  - action_id: "adult_sleep"
+    actor_tags: ["working_adult", "sah_adult"]
+    interruptible: true
+    satisfies: { energy: 100.0 }
+    bonus_curves:
+      - { context_key: "time.hour", peak: 3.5, width: 4.0, magnitude: 200.0 }
+    duration: { type: 3, value: "8h" }
+
+  # MORNING SHUFFLE
+  - action_id: "quick_shower"
+    device_id: "shower_1"
+    satisfies: { hygiene: 100.0 }
+    costs: { energy: 2.0 }
+    modifiers:
+      - condition: { context_key: "alarm.morning_rise", operator: 1, value: "true" }
+        boost: 160.0 
+    duration: { type: 3, value: "10m" }
+
+  - action_id: "eat_cereal_and_coffee"
+    device_id: "microwave_1"
+    satisfies: { hunger: 40.0 }
+    modifiers:
+      - condition: { context_key: "alarm.morning_rise", operator: 1, value: "true" }
+        boost: 160.0
+    duration: { type: 3, value: "5m" }
+
+  # SOCIETAL OBLIGATIONS (Hard Locks)
+  - action_id: "go_to_work"
+    actor_tags: ["working_adult"] 
+    satisfies: { work_duty: 100.0 }
+    costs: { energy: 40.0 }
+    available_when: 
+      - { context_key: "time.hour", operator: 3, value: "7.9" }
+      - { context_key: "time.hour", operator: 4, value: "21.0" } # Hard boot at 9 PM
+    bonus_curves:
+      - { context_key: "time.hour", peak: 8.5, width: 1.0, magnitude: 150.0 }
+    expected_meters:
+      hunger: 30.0 
+      hygiene: 50.0
+    duration: { type: 3, value: "9h" }
+
+  - action_id: "go_to_school"
+    actor_tags: ["child"] 
+    satisfies: { school_duty: 100.0 }
+    costs: { energy: 30.0 }
+    available_when: 
+      - { context_key: "time.hour", operator: 3, value: "7.9" }
+      - { context_key: "time.hour", operator: 4, value: "9.0" }
+    bonus_curves:
+      - { context_key: "time.hour", peak: 8.5, width: 0.5, magnitude: 150.0 }
+    expected_meters:
+      hunger: 30.0
+      hygiene: 50.0
+    duration: { type: 3, value: "7h" }
+
+  # SAH PARENT DAY
+  - action_id: "run_laundry"
+    actor_tags: ["sah_adult"] 
+    device_id: "washing_machine"
+    satisfies: { chore_duty: 60.0 }
+    costs: { energy: 10.0 }
+    duration: { type: 3, value: "90m" }
+
+  - action_id: "go_out_for_lunch"
+    actor_tags: ["sah_adult"]
+    satisfies: { hunger: 80.0, entertainment: 60.0 }
+    available_when:
+      - { context_key: "time.hour", operator: 3, value: "11.0" }
+      - { context_key: "time.hour", operator: 4, value: "14.0" }
+    duration: { type: 3, value: "90m" }
+
+  # COOPERATIVE DINNER PREP
+  - action_id: "cook_family_dinner"
+    actor_tags: ["sah_adult", "working_adult"]
+    device_id: "cooker_1" # Locks the cooker
+    satisfies: { chore_duty: 100.0 }
+    costs: { energy: 15.0 }
+    produces: { prepared_meals: 4.0 }
+    available_when: 
+      - { context_key: "time.hour", operator: 3, value: "16.0" }
+      - { context_key: "time.hour", operator: 4, value: "20.0" }
+    bonus_curves:
+      - { context_key: "time.hour", peak: 18.0, width: 1.5, magnitude: 150.0 }
+    duration: { type: 3, value: "45m" }
+
+  - action_id: "help_with_dinner"
+    actor_tags: ["sah_adult", "working_adult", "child"]
+    # Does NOT lock the cooker, allows someone else to help out organically
+    satisfies: { chore_duty: 40.0 }
+    costs: { energy: 5.0 }
+    available_when: 
+      - { context_key: "time.hour", operator: 3, value: "16.5" }
+      - { context_key: "time.hour", operator: 4, value: "19.5" }
+    bonus_curves:
+      - { context_key: "time.hour", peak: 18.0, width: 1.0, magnitude: 80.0 }
+    duration: { type: 3, value: "30m" }
+
+  - action_id: "eat_family_dinner"
+    requires: { prepared_meals: 1.0 }
+    satisfies: { hunger: 100.0 }
+    duration: { type: 3, value: "20m" }
+
+  # EVENING RELAXATION
+  - action_id: "do_homework"
+    actor_tags: ["child"]
+    satisfies: { school_duty: 40.0 }
+    costs: { energy: 10.0 }
+    bonus_curves:
+      - { context_key: "time.hour", peak: 16.0, width: 1.5, magnitude: 100.0 }
+    duration: { type: 3, value: "1h" }
+
+  - action_id: "doomscroll_phone"
+    satisfies: { entertainment: 10.0 }
+    duration: { type: 3, value: "10m" }
+
+  - action_id: "watch_tv"
+    device_id: "big_tv"
+    satisfies: { entertainment: 80.0 }
+    duration: { type: 3, value: "2h" }
+
+actors:
+  - actor_id: "working_parent"
+    type: "working_adult"
+    ai_model: "utility"
+    starting_meters:
+      energy: 0.0
+      hygiene: 60.0
+      hunger: 50.0
+      work_duty: 100.0
+      entertainment: 100.0
+
+  - actor_id: "sah_parent"
+    type: "sah_adult"
+    ai_model: "utility"
+    starting_meters:
+      energy: 0.0
+      hygiene: 70.0
+      hunger: 60.0
+      chore_duty: 100.0
+      entertainment: 100.0
+
+  - actor_id: "child_1"
+    type: "child"
+    ai_model: "utility"
+    starting_meters:
+      energy: 0.0
+      hygiene: 80.0
+      hunger: 70.0
+      school_duty: 100.0
+      entertainment: 100.0
+
+  - actor_id: "child_2"
+    type: "child"
+    ai_model: "utility"
+    starting_meters:
+      energy: 0.0
+      hygiene: 90.0
+      hunger: 80.0
+      school_duty: 100.0
+      entertainment: 100.0
+
+  - actor_id: "house_system"
+    type: "system"
+
+scenarios:
+  - scenario_id: "thermostat_heat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions:
+        - { context_key: "indoor_temp_c", operator: 4, value: "18.0" }
+      fatigue_rule: { lockout_duration: "30m" }
+    actions:
+      - device_id: "central_heating"
+        state: 1
+        parameters: { duration: { type: 3, value: "20m" } }
+
+  - scenario_id: "tank_thermostat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions:
+        - { context_key: "tank_temp_c", operator: 4, value: "40.0" }
+      fatigue_rule: { lockout_duration: "60m" }
+    actions:
+      - device_id: "immersion_heater"
+        state: 1
+        parameters: { duration: { type: 3, value: "45m" } }
+
+  - scenario_id: "fridge_compressor"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions: []
+      fatigue_rule: { lockout_duration: "45m" }
+    actions:
+      - device_id: "fridge_1"
+        state: 1
+        parameters: { duration: { type: 3, value: "15m" } }

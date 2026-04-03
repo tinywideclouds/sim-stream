@@ -27,16 +27,18 @@ devices:
       cold_lpm: 0.0
 
 scenarios:
-  - scenario_id: "make_tea"
-    actor_tags: ["adult"]
+  - scenario_id: "thermostat"
+    actor_tags: ["system"]
     trigger:
       type: 2
-      distribution:
-        type: 3
-        value: "0.8"
-        timeframe: "1h"
+      base_conditions:
+        - context_key: "indoor_temp_c"
+          operator: 4
+          value: "16.5"
+      fatigue_rule:
+        lockout_duration: "30m"
     actions:
-      - device_id: "kettle_1"
+      - device_id: "central_heating"
         state: 1
         parameters:
           duration:
@@ -70,18 +72,19 @@ scenarios:
 		t.Errorf("Expected hot_lpm 9.5, got %f", archetype.Devices[0].WaterProfile.HotLitersPerMinute)
 	}
 
-	// 3. Scenario & Pointer Triggers
+	// 3. Scenario & New Trigger Rules
 	if len(archetype.Scenarios) != 1 {
 		t.Fatalf("Expected 1 scenario, got %d", len(archetype.Scenarios))
 	}
-	scenario := archetype.Scenarios[0]
-	if scenario.ActorTags[0] != "adult" {
-		t.Errorf("Expected actor tag 'adult', got '%s'", scenario.ActorTags[0])
+
+	trigger := archetype.Scenarios[0].Trigger
+	if trigger.Type != TriggerTypeEventReaction {
+		t.Errorf("Expected TriggerType %d, got %d", TriggerTypeEventReaction, trigger.Type)
 	}
-	if scenario.Trigger == nil {
-		t.Fatal("Expected trigger to be populated, got nil")
+	if len(trigger.BaseConditions) != 1 || trigger.BaseConditions[0].ContextKey != "indoor_temp_c" {
+		t.Errorf("Expected BaseCondition on indoor_temp_c")
 	}
-	if scenario.Trigger.Distribution.Timeframe != "1h" {
-		t.Errorf("Expected timeframe '1h', got '%s'", scenario.Trigger.Distribution.Timeframe)
+	if trigger.FatigueRule.LockoutDuration != "30m" {
+		t.Errorf("Expected FatigueRule lockout to be '30m', got '%s'", trigger.FatigueRule.LockoutDuration)
 	}
 }
