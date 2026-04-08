@@ -1,102 +1,156 @@
+// pkg/parsers/modifiers.go
 package parsers
 
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
-// EnvironmentSnapshot represents the state of the world at a specific simulation tick.
-// e.g., {"weather.external_temp_c": 4.5, "time.is_weekend": false}
-type EnvironmentSnapshot map[string]any
+// StateSnapshot represents the state of the world or an actor at a specific simulation tick.
+type StateSnapshot map[string]any
 
-// ApplyModifiers evaluates the context against the distribution's modifiers.
-// It returns a newly calculated ProbabilityDistribution ready for the Sampler.
-func ApplyModifiers(base domain.ProbabilityDistribution, ctx EnvironmentSnapshot) (domain.ProbabilityDistribution, error) {
-	// Create a copy so we don't mutate the underlying blueprint
-	shifted := base
+// ApplyModifiers evaluates the snapshot against the distribution's modifiers and returns a shifted copy.
+func ApplyModifiers(baseDistribution domain.ProbabilityDistribution, snapshot StateSnapshot) (domain.ProbabilityDistribution, error) {
+	shiftedDistribution := baseDistribution
 
-	for _, mod := range base.Modifiers {
-		matched, err := CheckCondition(mod.Condition, ctx)
-		if err != nil {
-			return shifted, fmt.Errorf("failed to evaluate condition %q: %w", mod.Condition.ContextKey, err)
+	totalShiftDuration, err := CalculateShiftDuration(baseDistribution.Modifiers, snapshot)
+	if err != nil {
+		return shiftedDistribution, err
+	}
+
+	if totalShiftDuration != 0 {
+		if shiftedDistribution.Mean != "" {
+			baseMeanDuration, err := time.ParseDuration(shiftedDistribution.Mean)
+			if err == nil {
+				shiftedDistribution.Mean = (baseMeanDuration + totalShiftDuration).String()
+			}
 		}
-
-		if matched {
-			err = applyShift(&shifted, mod)
-			if err != nil {
-				return shifted, fmt.Errorf("failed to apply modifier: %w", err)
+		if shiftedDistribution.Value != "" {
+			baseValueDuration, err := time.ParseDuration(shiftedDistribution.Value)
+			if err == nil {
+				shiftedDistribution.Value = (baseValueDuration + totalShiftDuration).String()
 			}
 		}
 	}
 
-	return shifted, nil
+	return shiftedDistribution, nil
+}
+
+// CalculateShiftDuration computes the total time shift applied by a set of modifiers based on the current state.
+func CalculateShiftDuration(modifiers []domain.DistributionModifier, snapshot StateSnapshot) (time.Duration, error) {
+	var cumulativeShift time.Duration
+
+	for _, modifier := range modifiers {
+		matched, err := CheckCondition(modifier.Condition, snapshot)
+		if err != nil {
+			return 0, fmt.Errorf("failed to evaluate condition %q: %w", modifier.Condition.ContextKey, err)
+		}
+
+		if matched {
+			shiftDuration, err := evaluateSingleModifierShift(modifier, snapshot)
+			if err != nil {
+				return 0, fmt.Errorf("failed to calculate shift for modifier: %w", err)
+			}
+			cumulativeShift += shiftDuration
+		}
+	}
+
+	return cumulativeShift, nil
+}
+
+func evaluateSingleModifierShift(modifier domain.DistributionModifier, snapshot StateSnapshot) (time.Duration, error) {
+	var totalShift time.Duration
+
+	if modifier.ShiftMean != "" {
+		meanShift, err := time.ParseDuration(modifier.ShiftMean)
+		if err == nil {
+			totalShift += meanShift
+		}
+	}
+
+	if modifier.ShiftValue != "" {
+		valueShift, err := time.ParseDuration(modifier.ShiftValue)
+		if err == nil {
+			totalShift += valueShift
+		}
+	}
+
+	if modifier.ProportionalSkew != 0 {
+		contextValueInterface, exists := snapshot[modifier.Condition.ContextKey]
+		if exists {
+			var actualValue float64
+			switch parsedValue := contextValueInterface.(type) {
+			case float64:
+				actualValue = parsedValue
+			case int:
+				actualValue = float64(parsedValue)
+			}
+
+			targetValue, err := strconv.ParseFloat(modifier.Condition.Value, 64)
+			if err == nil {
+				delta := targetValue - actualValue
+				shiftSeconds := delta * modifier.ProportionalSkew
+				skewDuration := time.Duration(shiftSeconds * float64(time.Second))
+
+				if modifier.ClampMin != "" {
+					minimumDuration, _ := time.ParseDuration(modifier.ClampMin)
+					if skewDuration < minimumDuration {
+						skewDuration = minimumDuration
+					}
+				}
+				if modifier.ClampMax != "" {
+					maximumDuration, _ := time.ParseDuration(modifier.ClampMax)
+					if skewDuration > maximumDuration {
+						skewDuration = maximumDuration
+					}
+				}
+
+				totalShift += skewDuration
+			}
+		}
+	}
+
+	return totalShift, nil
 }
 
 // CheckCondition evaluates a single EngineCondition against the current context.
-func CheckCondition(cond domain.EngineCondition, ctx EnvironmentSnapshot) (bool, error) {
-	val, exists := ctx[cond.ContextKey]
+func CheckCondition(condition domain.EngineCondition, snapshot StateSnapshot) (bool, error) {
+	contextValue, exists := snapshot[condition.ContextKey]
 	if !exists {
-		// If the context key isn't present, the condition safely fails rather than panicking.
 		return false, nil
 	}
 
-	// Simple type assertions for the MVP
-	switch v := val.(type) {
+	switch parsedValue := contextValue.(type) {
 	case float64:
-		// Convert the condition's string value to a float for comparison
-		target, err := strconv.ParseFloat(cond.Value, 64)
+		targetFloat, err := strconv.ParseFloat(condition.Value, 64)
 		if err != nil {
-			return false, fmt.Errorf("cannot compare float context to non-float condition value %q", cond.Value)
+			return false, fmt.Errorf("condition value %q is not a valid float", condition.Value)
 		}
-		return compareFloat(v, target, cond.Operator), nil
-
+		return compareFloat(parsedValue, targetFloat, condition.Operator), nil
+	case int:
+		targetFloat, err := strconv.ParseFloat(condition.Value, 64)
+		if err != nil {
+			return false, fmt.Errorf("condition value %q is not a valid float", condition.Value)
+		}
+		return compareFloat(float64(parsedValue), targetFloat, condition.Operator), nil
+	case string:
+		return compareString(parsedValue, condition.Value, condition.Operator), nil
 	case bool:
-		target, err := strconv.ParseBool(cond.Value)
+		targetBool, err := strconv.ParseBool(condition.Value)
 		if err != nil {
-			return false, fmt.Errorf("cannot compare bool context to non-bool condition value %q", cond.Value)
+			return false, fmt.Errorf("condition value %q is not a valid boolean", condition.Value)
 		}
-		return compareBool(v, target, cond.Operator), nil
-
+		return compareBool(parsedValue, targetBool, condition.Operator), nil
 	default:
-		return false, fmt.Errorf("unsupported context value type for key %q", cond.ContextKey)
+		return false, fmt.Errorf("unsupported type for context key %q", condition.ContextKey)
 	}
 }
 
-// applyShift mutates the passed distribution copy.
-// For the MVP, we only handle shifting time durations (e.g., adding 30m to a wake-up time).
-func applyShift(dist *domain.ProbabilityDistribution, mod domain.DistributionModifier) error {
-	if mod.ShiftMean == "" {
-		return nil
-	}
-
-	// We assume 'Mean' is formatted as a Go duration, e.g., "7h0m" for 7:00 AM.
-	baseMeanDur, err := time.ParseDuration(dist.Mean)
-	if err != nil {
-		return fmt.Errorf("invalid base mean duration %q", dist.Mean)
-	}
-
-	// time.ParseDuration doesn't like a leading "+", so we trim it.
-	// It handles "-" natively (e.g., "-30m").
-	cleanShift := strings.TrimPrefix(mod.ShiftMean, "+")
-	shiftDur, err := time.ParseDuration(cleanShift)
-	if err != nil {
-		return fmt.Errorf("invalid shift duration %q", mod.ShiftMean)
-	}
-
-	// Apply the shift and write it back to the distribution as a string
-	newMean := baseMeanDur + shiftDur
-	dist.Mean = newMean.String()
-
-	return nil
-}
-
-// Helper: compareFloat
-func compareFloat(actual, target float64, op domain.ConditionOperator) bool {
-	switch op {
+func compareFloat(actual float64, target float64, operator domain.ConditionOperator) bool {
+	switch operator {
 	case domain.ConditionOperatorEq:
 		return actual == target
 	case domain.ConditionOperatorNeq:
@@ -114,9 +168,19 @@ func compareFloat(actual, target float64, op domain.ConditionOperator) bool {
 	}
 }
 
-// Helper: compareBool
-func compareBool(actual, target bool, op domain.ConditionOperator) bool {
-	switch op {
+func compareString(actual string, target string, operator domain.ConditionOperator) bool {
+	switch operator {
+	case domain.ConditionOperatorEq:
+		return actual == target
+	case domain.ConditionOperatorNeq:
+		return actual != target
+	default:
+		return false
+	}
+}
+
+func compareBool(actual bool, target bool, operator domain.ConditionOperator) bool {
+	switch operator {
 	case domain.ConditionOperatorEq:
 		return actual == target
 	case domain.ConditionOperatorNeq:

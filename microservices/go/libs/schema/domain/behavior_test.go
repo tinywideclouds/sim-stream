@@ -1,3 +1,4 @@
+// domain/behavior_test.go
 package domain
 
 import (
@@ -16,7 +17,7 @@ type TestWrapper struct {
 	Actions          []ActionTemplate  `yaml:"actions"`
 }
 
-func TestV2BehaviorUnmarshaling(t *testing.T) {
+func TestRoutineBehaviorUnmarshaling(t *testing.T) {
 	yamlInput := `
 routine_templates:
   - routine_id: "morning_prep"
@@ -91,8 +92,7 @@ collective_events:
 	}
 }
 
-// NEW: Prove that V3 Utility structures unmarshal correctly
-func TestV3UtilityUnmarshaling(t *testing.T) {
+func TestUtilityBehaviorUnmarshaling(t *testing.T) {
 	yamlInput := `
 meters:
   - meter_id: "hunger"
@@ -104,7 +104,10 @@ actions:
   - action_id: "cook_dinner"
     device_id: "cooker_1"
     satisfies:
-      hunger: 80.0
+      hunger: 80.0 # Proving backwards compatibility (flat float)
+      energy:      # Proving new struct format
+        amount: 15.0
+        curve: "ease_in"
     costs:
       energy: 15.0
     duration:
@@ -122,15 +125,24 @@ actors:
 	var wrapper TestWrapper
 	err := yaml.Unmarshal([]byte(strings.TrimSpace(yamlInput)), &wrapper)
 	if err != nil {
-		t.Fatalf("Failed to unmarshal V3 YAML: %v", err)
+		t.Fatalf("Failed to unmarshal Utility YAML: %v", err)
 	}
 
 	if len(wrapper.Meters) != 1 || wrapper.Meters[0].BaseDecayPerHour != 10.0 {
 		t.Errorf("Failed to parse Meters correctly")
 	}
 
-	if len(wrapper.Actions) != 1 || wrapper.Actions[0].Satisfies["hunger"] != 80.0 {
-		t.Errorf("Failed to parse Actions correctly")
+	// Verify ActionFill Unmarshaling
+	if len(wrapper.Actions) != 1 {
+		t.Fatalf("Expected 1 action, got %d", len(wrapper.Actions))
+	}
+
+	action := wrapper.Actions[0]
+	if action.Satisfies["hunger"].Amount != 80.0 || action.Satisfies["hunger"].Curve != "linear" {
+		t.Errorf("Failed to parse flat float backwards compatibility for 'hunger'")
+	}
+	if action.Satisfies["energy"].Amount != 15.0 || action.Satisfies["energy"].Curve != "ease_in" {
+		t.Errorf("Failed to parse explicit struct for 'energy'")
 	}
 
 	actor := wrapper.Actors[0]

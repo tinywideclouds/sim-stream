@@ -1,3 +1,4 @@
+// domain/archetype_test.go
 package domain
 
 import (
@@ -9,8 +10,8 @@ import (
 
 func TestNodeArchetypeUnmarshaling(t *testing.T) {
 	yamlInput := `
-archetype_id: "v2_test_house_01"
-description: "A complete multi-agent V2 configuration test."
+archetype_id: "test_house_01"
+description: "A complete multi-agent integrated configuration test."
 base_temp_c: 12.0
 insulation_decay_rate: 0.15
 
@@ -54,8 +55,8 @@ scenarios:
 	}
 
 	// 1. Root Properties
-	if archetype.ArchetypeID != "v2_test_house_01" {
-		t.Errorf("Expected ArchetypeID 'v2_test_house_01', got '%s'", archetype.ArchetypeID)
+	if archetype.ArchetypeID != "test_house_01" {
+		t.Errorf("Expected ArchetypeID 'test_house_01', got '%s'", archetype.ArchetypeID)
 	}
 	if archetype.BaseTempC != 12.0 {
 		t.Errorf("Expected BaseTempC 12.0, got %f", archetype.BaseTempC)
@@ -72,7 +73,7 @@ scenarios:
 		t.Errorf("Expected hot_lpm 9.5, got %f", archetype.Devices[0].WaterProfile.HotLitersPerMinute)
 	}
 
-	// 3. Scenario & New Trigger Rules
+	// 3. Scenario & Trigger Rules
 	if len(archetype.Scenarios) != 1 {
 		t.Fatalf("Expected 1 scenario, got %d", len(archetype.Scenarios))
 	}

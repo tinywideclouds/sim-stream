@@ -1,0 +1,48 @@
+# catalogs/systems/ambient.yaml
+systems:
+  - id: "ambient_thermostat"
+    scenarios:
+      # 1. Indoor Temperature Control
+      - scenario_id: "thermostat_heat"
+        actor_tags: ["system"]
+        trigger:
+          type: 2
+          base_conditions:
+            - context_key: "indoor_temp_c"
+              operator: 4 
+              value: "18.0"
+          fatigue_rule: { lockout_duration: "30m" }
+        actions:
+          # FIXED: Now matches the hardware tag
+          - device_id: "heating_system" 
+            state: 1
+            parameters: { duration: { type: 3, value: "20m" } }
+
+      # 2. Hot Water Tank Maintenance
+      - scenario_id: "tank_thermostat"
+        actor_tags: ["system"]
+        trigger:
+          type: 2
+          base_conditions:
+            - context_key: "tank_temp_c"
+              operator: 4 
+              value: "45.0"
+          fatigue_rule: { lockout_duration: "60m" }
+        actions:
+          # FIXED: Now matches the hardware tag
+          - device_id: "water_heating" 
+            state: 1
+            parameters: { duration: { type: 3, value: "45m" } }
+
+      # 3. Fridge Compressor Duty Cycle
+      - scenario_id: "fridge_compressor_cycle"
+        actor_tags: ["system"]
+        trigger:
+          type: 2
+          base_conditions: [] 
+          fatigue_rule: { lockout_duration: "45m" } 
+        actions:
+          # FIXED: Now matches the hardware tag
+          - device_id: "refrigeration"
+            state: 1
+            parameters: { duration: { type: 3, value: "15m" } }

@@ -66,7 +66,7 @@ const (
 	TriggerTypeEventReaction
 )
 
-// ActorState defines the current V2 lifecycle phase of a human or system.
+// ActorState defines the current lifecycle phase of a human or system.
 type ActorState int
 
 const (
@@ -74,5 +74,5 @@ const (
 	ActorStateAsleep                   // Will not trigger ambient events
 	ActorStateHomeFree                 // Awake, at home, and idle (Will trigger ambient events)
 	ActorStateRoutineActive            // Currently executing a sequential task list
-	ActorStateAway                     // Physically not in the simulation node
+	ActorStateAway                     // Physically not in the simulation node (Ghosted)
 )

@@ -1,0 +1,82 @@
+# catalogs/actions/food/meals.yaml
+actions:
+  # 1. The Heavy Meal
+  - id: "cook_large_dinner"
+    requires_device_tag: "cooking_high_load" # Maps to electric ovens, gas ranges, etc.
+    template:
+      action_id: "cook_large_dinner"
+      interruptible: false
+      initiation_friction: 20.0 # Takes effort to start cooking after a long day
+      satisfies:
+        hunger:
+          amount: 100.0
+          curve: "linear"
+        energy:
+          amount: 10.0 # A good meal gives a little energy back
+          curve: "back_loaded"
+      costs:
+        energy: 15.0 # But the act of cooking costs energy upfront
+      duration: 
+        type: 1 # Normal Distribution
+        mean: "45m"
+        std_dev: "10m"
+      bonus_curves:
+        # Cultural pull to eat dinner around 19:00 (7:00 PM)
+        - context_key: "time.hour_float"
+          peak: 19.0
+          width: 2.0
+          magnitude: 40.0
+
+  # 2. The Quick Fix
+  - id: "microwave_meal"
+    requires_device_tag: "microwave" # Maps to budget or high-power microwaves
+    template:
+      action_id: "microwave_meal"
+      interruptible: true
+      initiation_friction: 2.0 # Very easy to choose when tired
+      satisfies:
+        hunger:
+          amount: 45.0
+          curve: "front_loaded"
+      duration: 
+        type: 1
+        mean: "5m"
+        std_dev: "1m"
+
+  # 3. The Snack
+  - id: "make_toast_snack"
+    requires_device_tag: "toaster"
+    template:
+      action_id: "make_toast_snack"
+      interruptible: true
+      initiation_friction: 1.0
+      satisfies:
+        hunger:
+          amount: 15.0
+          curve: "linear"
+      duration: 
+        type: 3 # Constant
+        value: "3m"
+
+  # 4. The Caffeine Hit
+  - id: "make_hot_drink"
+    requires_device_tag: "hot_beverage" # Maps to kettles or espresso machines
+    template:
+      action_id: "make_hot_drink"
+      interruptible: true
+      initiation_friction: 1.0
+      satisfies:
+        energy:
+          amount: 15.0 # The caffeine bump!
+          curve: "linear"
+        hunger:
+          amount: 5.0
+      duration: 
+        type: 3
+        value: "4m"
+      bonus_curves:
+        # Strong pull to make coffee/tea in the morning
+        - context_key: "time.hour_float"
+          peak: 7.5
+          width: 1.5
+          magnitude: 25.0

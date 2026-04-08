@@ -1,3 +1,4 @@
+// internal/engine/executer_test.go
 package engine_test
 
 import (
@@ -5,7 +6,6 @@ import (
 	"time"
 
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
-
 	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
@@ -17,7 +17,7 @@ func TestExecutor_AdvanceRoutine_Abort(t *testing.T) {
 	sampler := generator.NewSampler(seed)
 	executor := engine.NewExecutor(sampler)
 
-	// 2. Setup V2 Blueprint with a Routine and two Scenarios
+	// 2. Setup Blueprint with a Routine and two Scenarios
 	blueprint := &domain.NodeArchetype{
 		RoutineTemplates: []domain.RoutineTemplate{
 			{

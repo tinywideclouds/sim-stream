@@ -1,3 +1,4 @@
+// domain/archetype.go
 package domain
 
 // GridTemplate defines the regional physics of the local power grid.
@@ -20,14 +21,12 @@ type WaterSystemTemplate struct {
 
 // NodeArchetype is the root document representing a full house/building simulation.
 type NodeArchetype struct {
-	ArchetypeID         string        `yaml:"archetype_id"`
-	Description         string        `yaml:"description"`
-	BaseTempC           float64       `yaml:"base_temp_c"`
-	InsulationDecayRate float64       `yaml:"insulation_decay_rate"`
-	Grid                *GridTemplate `yaml:"grid"`
-
-	// The house-specific water configuration
-	WaterSystem *WaterSystemTemplate `yaml:"water_system"`
+	ArchetypeID         string               `yaml:"archetype_id"`
+	Description         string               `yaml:"description"`
+	BaseTempC           float64              `yaml:"base_temp_c"`
+	InsulationDecayRate float64              `yaml:"insulation_decay_rate"`
+	Grid                *GridTemplate        `yaml:"grid"`
+	WaterSystem         *WaterSystemTemplate `yaml:"water_system"`
 
 	// The Physical Environment
 	Devices   []DeviceTemplate   `yaml:"devices"`
@@ -36,11 +35,11 @@ type NodeArchetype struct {
 	// The Entities (Humans & Systems)
 	Actors []ActorTemplate `yaml:"actors"`
 
-	// V2: Routine AI Blueprints
+	// Routine Blueprints (The Rails)
 	RoutineTemplates []RoutineTemplate `yaml:"routine_templates"`
 	CollectiveEvents []CollectiveEvent `yaml:"collective_events"`
 
-	// V3: Utility AI Blueprints
+	// Utility Blueprints (The Rubber Bands)
 	Meters  []MeterTemplate  `yaml:"meters"`
 	Actions []ActionTemplate `yaml:"actions"`
 	Alarms  []AlarmTemplate  `yaml:"alarms"`

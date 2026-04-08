@@ -1,0 +1,66 @@
+# catalogs/personas/retired.yaml
+personas:
+  - id: "retired_standard"
+    type: "elderly"
+    traits: ["disciplined"]
+    starting_meters: { energy: 70.0, hunger: 70.0, hygiene: 80.0, leisure: 80.0 }
+    phases:
+      - phase_id: "early_sleep"
+        type: "sleep"
+        anchor_time: "22:00"
+        buffer_duration: "8h"
+        away_profile: null
+      - phase_id: "midday_errands"
+        type: "away"
+        anchor_time: "10:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "2h", std_dev: "30m" }
+          modifiers: { energy: -20.0, hunger: -20.0, hygiene: -10.0, leisure: 10.0 }
+
+  - id: "retired_homebody"
+    type: "elderly"
+    traits: ["lazy"]
+    starting_meters: { energy: 60.0, hunger: 60.0, hygiene: 70.0, leisure: 60.0 }
+    phases: 
+      - phase_id: "long_sleep"
+        type: "sleep"
+        anchor_time: "22:30"
+        buffer_duration: "9h"
+        away_profile: null
+
+  - id: "retired_active"
+    type: "elderly"
+    traits: ["disciplined"]
+    starting_meters: { energy: 80.0, hunger: 70.0, hygiene: 80.0, leisure: 60.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "21:30"
+        buffer_duration: "7h30m"
+        away_profile: null
+      - phase_id: "morning_activities"
+        type: "away"
+        anchor_time: "08:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "4h", std_dev: "20m" }
+          modifiers: { energy: -40.0, hunger: -50.0, hygiene: -40.0, leisure: 30.0 }
+
+  - id: "retired_erratic"
+    type: "elderly"
+    traits: ["chaotic"]
+    starting_meters: { energy: 65.0, hunger: 50.0, hygiene: 60.0, leisure: 70.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "23:00"
+        buffer_duration: "8h"
+        away_profile: null
+      - phase_id: "afternoon_visiting"
+        type: "away"
+        anchor_time: "14:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "3h", std_dev: "60m" } 
+          modifiers: { energy: -25.0, hunger: 10.0, hygiene: -10.0, leisure: 40.0 }

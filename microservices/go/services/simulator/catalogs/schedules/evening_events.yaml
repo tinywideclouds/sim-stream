@@ -1,0 +1,43 @@
+# catalogs/schedules/evening_events.yaml
+collective_events:
+  - id: "night_out_drinks"
+    selection:
+      weight: 0.4
+      default_frequency: "1_per_week"
+    template:
+      event_id: "night_out_drinks"
+      action: "go_to_pub"
+      base_fragility: 0.15 # Sometimes plans just fall through
+      abort_conditions:
+        - key: "weather.precipitation_mm"
+          operator: ">"
+          value: "5.0" # Cancel only if it's pouring
+      lead_requirement: "adult"
+      dependent_rules:
+        - type: "adult"
+          friction_weight: 0.2
+          patience_limit: "30m"
+        - type: "elderly"
+          friction_weight: 0.8
+          patience_limit: "15m"
+        - type: "child"
+          friction_weight: 1.0
+          patience_limit: "0m"
+
+  - id: "shared_movie_night"
+    selection:
+      weight: 0.8
+      default_frequency: "2_per_week"
+    template:
+      event_id: "shared_movie_night"
+      action: "watch_tv"
+      base_fragility: 0.10
+      abort_conditions: [] 
+      lead_requirement: "any"
+      dependent_rules:
+        - type: "adult"
+          friction_weight: 0.4
+          patience_limit: "15m"
+        - type: "child"
+          friction_weight: 0.1
+          patience_limit: "10m"

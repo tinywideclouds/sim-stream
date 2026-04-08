@@ -1,0 +1,19 @@
+# catalogs/devices/cooking/air_fryers.yaml
+devices:
+  - id: "air_fryer_standard"
+    tags: ["cooking_medium_load", "air_fryer", "countertop_cooking"]
+    template:
+      taxonomy: { category: 1 }
+      electrical_profile: 
+        type: 1
+        max_watts: 1800.0
+        standby_watts: 1.5
+
+  - id: "air_fryer_dual_basket"
+    tags: ["cooking_medium_load", "air_fryer", "countertop_cooking"]
+    template:
+      taxonomy: { category: 1 }
+      electrical_profile: 
+        type: 1
+        max_watts: 2400.0
+        standby_watts: 2.0

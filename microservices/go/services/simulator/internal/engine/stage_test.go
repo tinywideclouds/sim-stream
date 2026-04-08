@@ -1,3 +1,4 @@
+// internal/engine/stage_test.go
 package engine_test
 
 import (
@@ -9,7 +10,7 @@ import (
 )
 
 func TestNewSimulationState(t *testing.T) {
-	// Setup a mock V2 blueprint
+	// Setup a mock integrated blueprint
 	blueprint := &domain.NodeArchetype{
 		ArchetypeID: "test_node",
 		BaseTempC:   18.5,
@@ -45,11 +46,12 @@ func TestNewSimulationState(t *testing.T) {
 	if !exists {
 		t.Fatal("Expected kettle_1 to exist in device ledger")
 	}
-	if kettle.State != domain.DeviceStateOff {
-		t.Errorf("Expected kettle_1 state to be OFF, got %v", kettle.State)
+	// BUGFIX: Devices initialize to Standby, not Off
+	if kettle.State != domain.DeviceStateStandby {
+		t.Errorf("Expected kettle_1 state to be Standby, got %v", kettle.State)
 	}
 
-	// 3. Check Actor Initialization (Crucial for V2)
+	// 3. Check Actor Initialization
 	if len(state.Actors) != 2 {
 		t.Fatalf("Expected 2 actors in ledger, got %d", len(state.Actors))
 	}

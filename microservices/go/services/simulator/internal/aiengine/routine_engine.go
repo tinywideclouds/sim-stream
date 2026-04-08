@@ -8,9 +8,6 @@ import (
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
-// RoutineEngine implements AIEngine using predictable, scheduled routines.
-// It uses a Scheduler to plan the day, a Negotiator to resolve conflicts,
-// and an Executor to step through linear task lists.
 type RoutineEngine struct {
 	scheduler    *engine.Scheduler
 	negotiator   *engine.Negotiator
@@ -20,7 +17,6 @@ type RoutineEngine struct {
 	rolloverHour int
 }
 
-// NewRoutineEngine initializes the scheduled AI model.
 func NewRoutineEngine(s *engine.Scheduler, n *engine.Negotiator, e *engine.Executor, rolloverHour int) *RoutineEngine {
 	return &RoutineEngine{
 		scheduler:    s,
@@ -31,11 +27,101 @@ func NewRoutineEngine(s *engine.Scheduler, n *engine.Negotiator, e *engine.Execu
 	}
 }
 
-// Process satisfies the AIEngine interface.
-func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.EnvironmentSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
+// ------------------------------------------------------------------
+// ADAPTER APIs FOR THE STABLE ENGINE (ARBITER)
+// ------------------------------------------------------------------
+
+// GetActiveRoutineAction dynamically shifts the routine time using the live snapshot.
+func (re *RoutineEngine) GetActiveRoutineAction(actorID string, simTime time.Time, snap parsers.StateSnapshot) (string, string, bool) {
+	actorPlan, exists := re.dailyPlan[actorID]
+	if !exists {
+		return "", "", false
+	}
+
+	for rID, routinePlan := range actorPlan {
+		// LIVE ELASTICITY: Calculate biological warp delta
+		shift, _ := parsers.CalculateShiftDuration(routinePlan.Modifiers, snap)
+		liveStart := routinePlan.TargetStart.Add(shift)
+		liveDeadline := routinePlan.TargetDeadline.Add(shift)
+
+		if !simTime.Before(liveStart) && simTime.Before(liveDeadline) {
+			return rID, rID, true
+		}
+	}
+
+	return "", "", false
+}
+
+func (re *RoutineEngine) AbortRoutine(actorID string) {
+	actorPlan, exists := re.dailyPlan[actorID]
+	if !exists {
+		return
+	}
+	for rID, routinePlan := range actorPlan {
+		routinePlan.TargetDeadline = time.Time{}
+		actorPlan[rID] = routinePlan
+	}
+}
+
+func (re *RoutineEngine) ProcessActor(actorID string, state *engine.SimulationState, tickDuration time.Duration, snap parsers.StateSnapshot) string {
+	actorLedger := state.Actors[actorID]
+	actorPlan := re.dailyPlan[actorID]
+
+	if actorLedger.CurrentState == domain.ActorStateAsleep || actorLedger.CurrentState == domain.ActorStateHomeFree {
+		for routineID, routinePlan := range actorPlan {
+			shift, _ := parsers.CalculateShiftDuration(routinePlan.Modifiers, snap)
+			liveStart := routinePlan.TargetStart.Add(shift)
+			liveDeadline := routinePlan.TargetDeadline.Add(shift)
+
+			if !routinePlan.HasStarted && !state.SimTime.Before(liveStart) && state.SimTime.Before(liveDeadline) {
+				routinePlan.HasStarted = true
+				actorPlan[routineID] = routinePlan
+
+				actorLedger.CurrentState = domain.ActorStateRoutineActive
+				actorLedger.CurrentRoutineID = routinePlan.RoutineID
+				actorLedger.RoutineStepIndex = 0
+				actorLedger.StateEndsAt = state.SimTime
+				break
+			}
+		}
+	}
+
+	if actorLedger.CurrentState == domain.ActorStateRoutineActive {
+		routinePlan := actorPlan[actorLedger.CurrentRoutineID]
+		shift, _ := parsers.CalculateShiftDuration(routinePlan.Modifiers, snap)
+		liveDeadline := routinePlan.TargetDeadline.Add(shift)
+
+		var tpl *domain.RoutineTemplate
+		for _, rt := range state.Blueprint.RoutineTemplates {
+			if rt.RoutineID == actorLedger.CurrentRoutineID {
+				tpl = &rt
+				break
+			}
+		}
+		if tpl != nil {
+			_ = re.executor.AdvanceRoutine(state, actorID, tpl, liveDeadline)
+		}
+
+		if actorLedger.CurrentState == domain.ActorStateRoutineActive {
+			taskName := "transitioning"
+			if tpl != nil {
+				idx := actorLedger.RoutineStepIndex - 1
+				if idx >= 0 && idx < len(tpl.Tasks) {
+					taskName = tpl.Tasks[idx]
+				}
+			}
+			return taskName
+		}
+	}
+
+	return ""
+}
+
+// ------------------------------------------------------------------
+
+func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
 	var activeHumanActors []string
 
-	// 1. Rollover Check (Midnight / Start of Day logic)
 	logicalDay := state.SimTime
 	if state.SimTime.Hour() < re.rolloverHour {
 		logicalDay = state.SimTime.Add(-24 * time.Hour)
@@ -47,9 +133,7 @@ func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.Env
 		re.buildDailyPlan(state, midnightOfLogicalDay, snap)
 	}
 
-	// 2. The Routine AI Loop
 	for _, actorTpl := range state.Blueprint.Actors {
-		// Only process actors assigned to this specific engine
 		if actorTpl.AIModel != "" && actorTpl.AIModel != "routine" {
 			continue
 		}
@@ -57,10 +141,13 @@ func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.Env
 		actorLedger := state.Actors[actorTpl.ActorID]
 		actorPlan := re.dailyPlan[actorTpl.ActorID]
 
-		// Wake up / Start Routine Check
 		if actorLedger.CurrentState == domain.ActorStateAsleep || actorLedger.CurrentState == domain.ActorStateHomeFree {
 			for routineID, routinePlan := range actorPlan {
-				if !routinePlan.HasStarted && !state.SimTime.Before(routinePlan.TargetStart) && state.SimTime.Before(routinePlan.TargetDeadline) {
+				shift, _ := parsers.CalculateShiftDuration(routinePlan.Modifiers, snap)
+				liveStart := routinePlan.TargetStart.Add(shift)
+				liveDeadline := routinePlan.TargetDeadline.Add(shift)
+
+				if !routinePlan.HasStarted && !state.SimTime.Before(liveStart) && state.SimTime.Before(liveDeadline) {
 					routinePlan.HasStarted = true
 					actorPlan[routineID] = routinePlan
 
@@ -73,9 +160,11 @@ func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.Env
 			}
 		}
 
-		// Execute Routine Step
 		if actorLedger.CurrentState == domain.ActorStateRoutineActive {
 			routinePlan := actorPlan[actorLedger.CurrentRoutineID]
+			shift, _ := parsers.CalculateShiftDuration(routinePlan.Modifiers, snap)
+			liveDeadline := routinePlan.TargetDeadline.Add(shift)
+
 			var tpl *domain.RoutineTemplate
 			for _, rt := range state.Blueprint.RoutineTemplates {
 				if rt.RoutineID == actorLedger.CurrentRoutineID {
@@ -84,7 +173,7 @@ func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.Env
 				}
 			}
 			if tpl != nil {
-				_ = re.executor.AdvanceRoutine(state, actorTpl.ActorID, tpl, routinePlan.TargetDeadline)
+				_ = re.executor.AdvanceRoutine(state, actorTpl.ActorID, tpl, liveDeadline)
 			}
 
 			if actorLedger.CurrentState == domain.ActorStateRoutineActive {
@@ -103,8 +192,7 @@ func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.Env
 	return activeHumanActors, nil, nil
 }
 
-// buildDailyPlan calls the Scheduler and Negotiator at the Rollover time.
-func (re *RoutineEngine) buildDailyPlan(state *engine.SimulationState, midnight time.Time, snap parsers.EnvironmentSnapshot) {
+func (re *RoutineEngine) buildDailyPlan(state *engine.SimulationState, midnight time.Time, snap parsers.StateSnapshot) {
 	for _, a := range state.Blueprint.Actors {
 		if a.AIModel != "" && a.AIModel != "routine" {
 			continue

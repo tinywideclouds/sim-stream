@@ -1,0 +1,31 @@
+# catalogs/devices/climate/heating.yaml
+devices:
+  # 1. The Gas Boiler (Low electrical draw, high thermal output)
+  - id: "gas_combi_boiler"
+    tags: ["heating_system", "gas_appliance"]
+    template:
+      taxonomy: { category: 2 } # Climate Control
+      electrical_profile: 
+        type: 1
+        max_watts: 60.0 # Just the circulation pump and electronics
+        standby_watts: 5.0
+
+  # 2. The Electric Boiler (Massive electrical draw)
+  - id: "electric_flow_boiler"
+    tags: ["heating_system", "electric_heating"]
+    template:
+      taxonomy: { category: 2 }
+      electrical_profile: 
+        type: 1
+        max_watts: 12000.0 # 12kW peak draw for whole-house heating
+        standby_watts: 2.0
+
+  # 3. The Immersion Heater (For the hot water tank)
+  - id: "immersion_heater_standard"
+    tags: ["water_heating", "tank_heater"]
+    template:
+      taxonomy: { category: 6 } # Water Heating
+      electrical_profile: 
+        type: 1
+        max_watts: 3000.0
+        standby_watts: 0.0

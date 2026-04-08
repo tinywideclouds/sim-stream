@@ -1,0 +1,131 @@
+# catalogs/personas/students.yaml
+personas:
+  - id: "student_early_lectures"
+    type: "adult"
+    traits: ["disciplined"]
+    starting_meters: { energy: 70.0, hunger: 50.0, hygiene: 50.0, leisure: 50.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "23:30"
+        buffer_duration: "7h"
+        away_profile: null
+      - phase_id: "university"
+        type: "away"
+        anchor_time: "08:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "6h", std_dev: "45m" }
+          modifiers: { energy: -40.0, hunger: -60.0, hygiene: -20.0, leisure: -30.0 }
+
+  - id: "student_night_owl"
+    type: "adult"
+    traits: ["lazy", "chaotic"]
+    starting_meters: { energy: 20.0, hunger: 20.0, hygiene: 30.0, leisure: 60.0 }
+    phases:
+      - phase_id: "late_sleep"
+        type: "sleep"
+        anchor_time: "03:00"
+        buffer_duration: "8h"
+        away_profile: null
+      - phase_id: "late_lectures"
+        type: "away"
+        anchor_time: "13:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "5h", std_dev: "60m" }
+          modifiers: { energy: -30.0, hunger: -40.0, hygiene: -20.0, leisure: -20.0 }
+
+  - id: "student_home_studier"
+    type: "adult"
+    traits: ["disciplined", "anxious"]
+    starting_meters: { energy: 80.0, hunger: 60.0, hygiene: 60.0, leisure: 30.0 }
+    phases: 
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "00:00"
+        buffer_duration: "7h30m"
+        away_profile: null
+
+  - id: "student_erratic"
+    type: "adult"
+    traits: ["chaotic"]
+    starting_meters: { energy: 60.0, hunger: 40.0, hygiene: 40.0, leisure: 40.0 }
+    phases:
+      - phase_id: "erratic_sleep"
+        type: "sleep"
+        anchor_time: "01:30"
+        buffer_duration: "7h"
+        away_profile: null
+      - phase_id: "erratic_campus_day"
+        type: "away"
+        anchor_time: "10:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "8h", std_dev: "120m" } 
+          modifiers: { energy: -60.0, hunger: -30.0, hygiene: -30.0, leisure: 20.0 }
+
+  - id: "student_gamer"
+    type: "adult"
+    traits: ["lazy"]
+    starting_meters: { energy: 50.0, hunger: 40.0, hygiene: 30.0, leisure: 10.0 }
+    phases:
+      - phase_id: "gamer_sleep"
+        type: "sleep"
+        anchor_time: "04:00"
+        buffer_duration: "6h"
+        away_profile: null
+      - phase_id: "minimal_lectures"
+        type: "away"
+        anchor_time: "11:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "3h", std_dev: "20m" }
+          modifiers: { energy: -20.0, hunger: -40.0, hygiene: -10.0, leisure: -20.0 }
+
+  - id: "student_part_time_job"
+    type: "adult"
+    traits: ["disciplined"]
+    starting_meters: { energy: 60.0, hunger: 50.0, hygiene: 50.0, leisure: 20.0 }
+    phases:
+      - phase_id: "exhausted_sleep"
+        type: "sleep"
+        anchor_time: "22:30"
+        buffer_duration: "8h"
+        away_profile: null
+      - phase_id: "work_and_study"
+        type: "away"
+        anchor_time: "09:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "10h", std_dev: "30m" }
+          modifiers: { energy: -80.0, hunger: -80.0, hygiene: -50.0, leisure: -40.0 }
+
+  - id: "student_social"
+    type: "adult"
+    traits: ["chaotic"]
+    starting_meters: { energy: 40.0, hunger: 50.0, hygiene: 40.0, leisure: 80.0 }
+    phases:
+      - phase_id: "party_recovery_sleep"
+        type: "sleep"
+        anchor_time: "02:00"
+        buffer_duration: "8h"
+        away_profile: null
+      - phase_id: "campus_and_pub"
+        type: "away"
+        anchor_time: "11:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "9h", std_dev: "90m" }
+          modifiers: { energy: -60.0, hunger: -10.0, hygiene: -30.0, leisure: 60.0 }
+
+  - id: "student_crammer"
+    type: "adult"
+    traits: ["anxious"]
+    starting_meters: { energy: 30.0, hunger: 30.0, hygiene: 20.0, leisure: 10.0 } 
+    phases: 
+      - phase_id: "nap_sleep"
+        type: "sleep"
+        anchor_time: "04:00"
+        buffer_duration: "4h"
+        away_profile: null

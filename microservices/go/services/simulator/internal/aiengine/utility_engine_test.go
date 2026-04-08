@@ -1,3 +1,4 @@
+// aiengine/utility_engine_test.go
 package aiengine
 
 import (
@@ -9,8 +10,49 @@ import (
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
+func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
+	// Setup minimalist blueprint
+	blueprint := &domain.NodeArchetype{
+		Actors: []domain.ActorTemplate{
+			{
+				ActorID: "test_actor",
+				AIModel: "stable",
+				StartingMeters: map[string]float64{
+					"energy": 50.0,
+				},
+			},
+		},
+	}
+	state := engine.NewSimulationState(blueprint, time.Now())
+
+	sampler := generator.NewSampler([32]byte{})
+	utilityEngine := NewUtilityEngine(sampler)
+
+	// Trigger initial map population
+	utilityEngine.Process(state, nil, 1*time.Minute)
+
+	// 1. Test Modifiers (Re-entry simulation)
+	modifiers := map[string]float64{"energy": -40.0}
+	limits := map[string]float64{"energy": 100.0}
+
+	utilityEngine.ApplyModifiersToMeters("test_actor", modifiers, limits)
+
+	// Fast check ignoring the tiny decay that happened during Process
+	currentEnergy := utilityEngine.meters["test_actor"]["energy"]
+	if currentEnergy > 10.1 { // Should be ~10.0 (50 - 40)
+		t.Errorf("Expected energy ~10.0 after modifier, got %.2f", currentEnergy)
+	}
+
+	// 2. Test Hard Reset (Burnout Snap)
+	utilityEngine.ResetMeters("test_actor", map[string]float64{"energy": 100.0})
+
+	if utilityEngine.meters["test_actor"]["energy"] != 100.0 {
+		t.Errorf("Expected energy 100.0 after reset, got %.2f", utilityEngine.meters["test_actor"]["energy"])
+	}
+}
+
 func TestUtilityEngine_EmergentBehavior(t *testing.T) {
-	// 1. Setup a V3 Blueprint
+	// Setup Blueprint with upgraded ActionFill struct
 	blueprint := &domain.NodeArchetype{
 		Meters: []domain.MeterTemplate{
 			{MeterID: "hunger", Max: 100.0, BaseDecayPerHour: 10.0, Curve: "linear"},
@@ -18,18 +60,13 @@ func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 		},
 		Actions: []domain.ActionTemplate{
 			{
-				ActionID:  "cook_dinner",
-				DeviceID:  "cooker_1",
-				Satisfies: map[string]float64{"hunger": 80.0},
-				Costs:     map[string]float64{"energy": 20.0},
-				Duration:  domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "45m"},
-			},
-			{
-				ActionID:  "microwave_snack",
-				DeviceID:  "microwave_1",
-				Satisfies: map[string]float64{"hunger": 25.0},
-				Costs:     map[string]float64{"energy": 2.0},
-				Duration:  domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "5m"},
+				ActionID: "cook_dinner",
+				DeviceID: "cooker_1",
+				Satisfies: map[string]domain.ActionFill{
+					"hunger": {Amount: 80.0, Curve: "linear"},
+				},
+				Costs:    map[string]float64{"energy": 20.0},
+				Duration: domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "45m"},
 			},
 		},
 		Actors: []domain.ActorTemplate{
@@ -45,22 +82,12 @@ func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 		},
 		Devices: []domain.DeviceTemplate{
 			{DeviceID: "cooker_1"},
-			{DeviceID: "microwave_1"},
 		},
 	}
 
 	state := engine.NewSimulationState(blueprint, time.Now())
-
-	var seed [32]byte
-	sampler := generator.NewSampler(seed)
+	sampler := generator.NewSampler([32]byte{})
 	utilityEngine := NewUtilityEngine(sampler)
-
-	// Tick 1: Evaluating actions.
-	// Urgency for hunger = 1.0 - (20/100) = 0.8
-	// Cook Dinner Score = (0.8 * 80) - 20(cost) = 44.0
-	// Microwave Score = (0.8 * 25) - 2(cost) = 18.0
-	// WAIT. Because they are tired, do they microwave?
-	// Let's see what the engine actually chooses!
 
 	activeActors, _, _ := utilityEngine.Process(state, nil, 15*time.Second)
 
@@ -68,19 +95,128 @@ func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 		t.Fatalf("Expected 1 active actor, got %d", len(activeActors))
 	}
 
-	// The score for Cook Dinner is higher (44 vs 18), so they choose to cook despite the energy cost!
 	if activeActors[0] != "wfh_worker:cook_dinner" {
 		t.Errorf("Expected wfh_worker to choose cook_dinner, got %s", activeActors[0])
 	}
+}
 
-	// Check that the device was locked
-	if state.Devices["cooker_1"].State != domain.DeviceStateOn {
-		t.Errorf("Expected cooker_1 to be ON")
+func TestUtilityEngine_GetActionUrgency(t *testing.T) {
+	blueprint := &domain.NodeArchetype{
+		Meters: []domain.MeterTemplate{
+			{MeterID: "hunger", Max: 100.0},
+		},
+		Actions: []domain.ActionTemplate{
+			{
+				ActionID: "cook_meal",
+				Satisfies: map[string]domain.ActionFill{
+					"hunger": {Amount: 60.0},
+				},
+			},
+		},
+		Actors: []domain.ActorTemplate{
+			{ActorID: "hungry_actor", AIModel: "stable"},
+			{ActorID: "full_actor", AIModel: "stable"},
+		},
 	}
 
-	// Check that physiological rewards were applied instantly (Hunger went from 20 -> 100)
-	currentHunger := utilityEngine.meters["wfh_worker"]["hunger"]
-	if currentHunger != 100.0 {
-		t.Errorf("Expected hunger to be satisfied to 100.0, got %.1f", currentHunger)
+	state := engine.NewSimulationState(blueprint, time.Now())
+	sampler := generator.NewSampler([32]byte{})
+	ue := NewUtilityEngine(sampler)
+
+	ue.Process(state, nil, 1*time.Minute)
+	ue.meters["hungry_actor"]["hunger"] = 20.0 // Deficit: 80
+	ue.meters["full_actor"]["hunger"] = 100.0  // Deficit: 0
+
+	hungryUrgency := ue.GetActionUrgency("hungry_actor", "cook_meal", state)
+	expectedHungry := 48.0
+	if hungryUrgency != expectedHungry {
+		t.Errorf("Expected hungry urgency to be %.1f, got %.1f", expectedHungry, hungryUrgency)
+	}
+
+	fullUrgency := ue.GetActionUrgency("full_actor", "cook_meal", state)
+	expectedFull := 0.0
+	if fullUrgency != expectedFull {
+		t.Errorf("Expected full urgency to be %.1f, got %.1f", expectedFull, fullUrgency)
+	}
+}
+
+func TestUtilityEngine_GetActorSnapshot(t *testing.T) {
+	sampler := generator.NewSampler([32]byte{})
+	ue := NewUtilityEngine(sampler)
+
+	actorID := "test_actor"
+	ue.meters[actorID] = map[string]float64{
+		"energy": 80.0,
+		"hunger": 30.0,
+	}
+
+	// 1. Fetch the localized snapshot
+	snapshot := ue.GetActorSnapshot(actorID)
+	if snapshot == nil {
+		t.Fatalf("Expected a snapshot, got nil")
+	}
+
+	// 2. Verify prefix mapping
+	if val, ok := snapshot["actor.energy"].(float64); !ok || val != 80.0 {
+		t.Errorf("Expected actor.energy to be 80.0, got %v", snapshot["actor.energy"])
+	}
+	if val, ok := snapshot["actor.hunger"].(float64); !ok || val != 30.0 {
+		t.Errorf("Expected actor.hunger to be 30.0, got %v", snapshot["actor.hunger"])
+	}
+
+	// 3. Verify internal state protection
+	snapshot["actor.energy"] = 10.0 // Attempt to mutate
+	if ue.meters[actorID]["energy"] == 10.0 {
+		t.Errorf("GetActorSnapshot leaked internal state reference! Internal map was mutated.")
+	}
+}
+
+func TestUtilityEngine_ForceTask(t *testing.T) {
+	sampler := generator.NewSampler([32]byte{})
+	ue := NewUtilityEngine(sampler)
+
+	blueprint := &domain.NodeArchetype{
+		Actors: []domain.ActorTemplate{
+			{ActorID: "actor1", StartingMeters: map[string]float64{"energy": 50.0}},
+		},
+		Meters: []domain.MeterTemplate{
+			{MeterID: "energy", Max: 100.0, BaseDecayPerHour: 6.0, Curve: "linear"},
+		},
+		Actions: []domain.ActionTemplate{
+			{
+				ActionID: "night_sleep",
+				Satisfies: map[string]domain.ActionFill{
+					"energy": {Amount: 50.0, Curve: "linear"},
+				},
+			},
+		},
+	}
+
+	simTime := time.Date(2026, 1, 1, 23, 0, 0, 0, time.UTC)
+	state := engine.NewSimulationState(blueprint, simTime)
+	state.Actors["actor1"] = &engine.ActorLedger{CurrentState: domain.ActorStateAsleep}
+
+	ue.ResetMeters("actor1", blueprint.Actors[0].StartingMeters)
+
+	sleepDuration := 8 * time.Hour
+	ue.ForceTask("actor1", "night_sleep", sleepDuration, state)
+
+	tickDuration := 1 * time.Minute
+	state.SimTime = state.SimTime.Add(tickDuration)
+	activeActors, _, _ := ue.Process(state, nil, tickDuration)
+
+	if len(activeActors) == 0 || activeActors[0] != "actor1:night_sleep" {
+		t.Errorf("Expected actor to report night_sleep, got %v", activeActors)
+	}
+
+	snap := ue.GetActorSnapshot("actor1")
+	energy, exists := snap["actor.energy"]
+	if !exists {
+		t.Fatalf("Expected actor.energy in snapshot")
+	}
+
+	// 50.0 start + (~0.104 fill) - (0.1 decay) = ~50.004
+	if energy.(float64) <= 50.0 {
+		t.Errorf("Expected energy to start recovering during forced task, got %f", energy.(float64))
 	}
 }

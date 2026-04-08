@@ -23,7 +23,7 @@ type TickResult struct {
 }
 
 type AIEngine interface {
-	Process(state *engine.SimulationState, snapshot parsers.EnvironmentSnapshot, tickDuration time.Duration) ([]string, []string, []string)
+	Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string)
 }
 
 type Orchestrator struct {

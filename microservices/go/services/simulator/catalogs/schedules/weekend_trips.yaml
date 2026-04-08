@@ -1,0 +1,43 @@
+# catalogs/schedules/weekend_trips.yaml
+collective_events:
+  - id: "sunday_park_trip"
+    selection:
+      weight: 0.5
+      default_frequency: "1_per_week"
+    template:
+      event_id: "sunday_park_trip"
+      action: "visit_park"
+      base_fragility: 0.20
+      abort_conditions:
+        - context_key: "weather.precipitation_mm"
+          operator: ">"
+          value: "1.0" # A little drizzle is okay, but not steady rain
+        - context_key: "weather.external_temp_c"
+          operator: "<"
+          value: "8.0" # Too cold for the kids
+      lead_requirement: "adult"
+      dependent_rules:
+        - type: "child"
+          friction_weight: 0.05
+          patience_limit: "30m"
+        - type: "adult"
+          friction_weight: 0.6
+          patience_limit: "15m"
+
+  - id: "big_grocery_shop"
+    selection:
+      weight: 0.9
+      default_frequency: "1_per_week"
+    template:
+      event_id: "big_grocery_shop"
+      action: "grocery_shopping"
+      base_fragility: 0.05
+      abort_conditions: []
+      lead_requirement: "adult"
+      dependent_rules:
+        - type: "adult"
+          friction_weight: 0.5 
+          patience_limit: "20m"
+        - type: "child"
+          friction_weight: 0.9
+          patience_limit: "5m"

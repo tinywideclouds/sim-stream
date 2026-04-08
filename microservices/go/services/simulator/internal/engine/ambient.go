@@ -10,7 +10,7 @@ import (
 
 // ProcessAmbientSystems evaluates environmental scenarios (like thermostats) and locks devices autonomously.
 // It returns a slice of active "system:scenario" strings for the CSV logger.
-func ProcessAmbientSystems(state *SimulationState, snapshot parsers.EnvironmentSnapshot, sampler *generator.Sampler) []string {
+func ProcessAmbientSystems(state *SimulationState, snapshot parsers.StateSnapshot, sampler *generator.Sampler) []string {
 	var activeActors []string
 
 	for _, scenario := range state.Blueprint.Scenarios {

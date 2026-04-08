@@ -1,0 +1,179 @@
+# catalogs/personas/children.yaml
+personas:
+  - id: "child_standard"
+    type: "child"
+    traits: ["chaotic"]
+    starting_meters: { energy: 90.0, hunger: 50.0, hygiene: 50.0, leisure: 30.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "20:30"
+        buffer_duration: "10h"
+        away_profile: null
+      - phase_id: "school_day"
+        type: "away"
+        anchor_time: "08:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "7h", std_dev: "10m" }
+          modifiers: { energy: -50.0, hunger: -70.0, hygiene: -30.0, leisure: -10.0 }
+
+  - id: "child_sports_club"
+    type: "child"
+    traits: ["disciplined"]
+    starting_meters: { energy: 80.0, hunger: 40.0, hygiene: 30.0, leisure: 40.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "21:00"
+        buffer_duration: "9h30m"
+        away_profile: null
+      - phase_id: "school_and_sports"
+        type: "away"
+        anchor_time: "08:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "9h", std_dev: "20m" } 
+          modifiers: { energy: -80.0, hunger: -90.0, hygiene: -80.0, leisure: 20.0 } 
+
+  - id: "child_gamer"
+    type: "child"
+    traits: ["lazy", "chaotic"]
+    starting_meters: { energy: 70.0, hunger: 50.0, hygiene: 40.0, leisure: 10.0 } 
+    phases:
+      - phase_id: "late_sleep"
+        type: "sleep"
+        anchor_time: "23:00"
+        buffer_duration: "8h"
+        away_profile: null
+      - phase_id: "school_day"
+        type: "away"
+        anchor_time: "08:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "7h", std_dev: "10m" }
+          modifiers: { energy: -40.0, hunger: -60.0, hygiene: -20.0, leisure: -50.0 }
+
+  - id: "child_toddler"
+    type: "child"
+    traits: ["chaotic"]
+    starting_meters: { energy: 100.0, hunger: 30.0, hygiene: 20.0, leisure: 80.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "19:00"
+        buffer_duration: "12h"
+        away_profile: null
+      - phase_id: "afternoon_nap"
+        type: "sleep"
+        anchor_time: "13:00"
+        buffer_duration: "2h"
+        away_profile: null
+      - phase_id: "daycare"
+        type: "away"
+        anchor_time: "09:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "6h", std_dev: "30m" }
+          modifiers: { energy: -70.0, hunger: -50.0, hygiene: -50.0, leisure: 0.0 }
+
+  - id: "child_teen_rebel"
+    type: "child"
+    traits: ["lazy"]
+    starting_meters: { energy: 40.0, hunger: 30.0, hygiene: 40.0, leisure: 60.0 } 
+    phases:
+      - phase_id: "erratic_sleep"
+        type: "sleep"
+        anchor_time: "01:00"
+        buffer_duration: "6h30m"
+        away_profile: null
+      - phase_id: "school_day"
+        type: "away"
+        anchor_time: "08:45" 
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "7h", std_dev: "30m" }
+          modifiers: { energy: -60.0, hunger: -60.0, hygiene: -20.0, leisure: -20.0 }
+
+  - id: "child_early_riser"
+    type: "child"
+    traits: ["chaotic"]
+    starting_meters: { energy: 100.0, hunger: 80.0, hygiene: 60.0, leisure: 40.0 }
+    phases:
+      - phase_id: "early_sleep"
+        type: "sleep"
+        anchor_time: "20:00"
+        buffer_duration: "9h"
+        away_profile: null
+      - phase_id: "school_day"
+        type: "away"
+        anchor_time: "08:00"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "7h", std_dev: "10m" }
+          modifiers: { energy: -50.0, hunger: -60.0, hygiene: -30.0, leisure: -10.0 }
+
+  - id: "child_after_school_club"
+    type: "child"
+    traits: ["disciplined"]
+    starting_meters: { energy: 80.0, hunger: 50.0, hygiene: 50.0, leisure: 40.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "21:30"
+        buffer_duration: "9h"
+        away_profile: null
+      - phase_id: "school_extended"
+        type: "away"
+        anchor_time: "08:15"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "8h30m", std_dev: "15m" }
+          modifiers: { energy: -60.0, hunger: -75.0, hygiene: -40.0, leisure: -5.0 }
+
+  - id: "child_home_schooled"
+    type: "child"
+    traits: ["disciplined"]
+    starting_meters: { energy: 85.0, hunger: 60.0, hygiene: 60.0, leisure: 40.0 }
+    phases: 
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "21:00"
+        buffer_duration: "10h"
+        away_profile: null
+
+  - id: "child_tv_addict"
+    type: "child"
+    traits: ["lazy"]
+    starting_meters: { energy: 70.0, hunger: 50.0, hygiene: 40.0, leisure: 10.0 }
+    phases:
+      - phase_id: "late_sleep"
+        type: "sleep"
+        anchor_time: "22:30"
+        buffer_duration: "8h"
+        away_profile: null
+      - phase_id: "school_day"
+        type: "away"
+        anchor_time: "08:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "7h", std_dev: "10m" }
+          modifiers: { energy: -40.0, hunger: -60.0, hygiene: -20.0, leisure: -60.0 }
+
+  - id: "child_messy"
+    type: "child"
+    traits: ["chaotic"]
+    starting_meters: { energy: 80.0, hunger: 60.0, hygiene: 10.0, leisure: 40.0 } 
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "21:00"
+        buffer_duration: "9h"
+        away_profile: null
+      - phase_id: "school_day"
+        type: "away"
+        anchor_time: "08:30"
+        buffer_duration: "30m"
+        away_profile:
+          duration: { type: 1, mean: "7h", std_dev: "10m" }
+          modifiers: { energy: -50.0, hunger: -60.0, hygiene: -80.0, leisure: -10.0 }

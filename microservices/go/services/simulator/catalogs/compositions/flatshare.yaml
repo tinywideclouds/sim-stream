@@ -1,0 +1,19 @@
+compositions:
+  - id: "flatshare_household"
+    description: "Young professionals and students."
+    persona_requirements:
+      - type: "adult"
+        min: 2
+        max: 4
+    required_device_tags:
+      - "essential_cooking"
+      - "microwave"
+      - "refrigeration"
+      - "heating_system"
+      - "water_heating"
+      - "shower"
+      - "television"
+      - "computer"
+    system_ids:
+      - "ambient_thermostat"
+    required_water_system_tag: "small_residential"
