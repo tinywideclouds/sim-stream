@@ -1,0 +1,145 @@
+archetype_id: "v3_single"
+description: "Fixed Math: Sleep outpaces decay, Leisure is capped."
+base_temp_c: 18.0
+insulation_decay_rate: 0.1
+
+grid:
+  nominal_voltage: 230.0
+  wave_center: 232.0
+  wave_amplitude: 5.0
+  peak_hour: 4.0
+
+water_system:
+  tank_capacity_liters: 150.0
+  mains_water_temp_celsius: 10.0
+  max_tank_temp_celsius: 60.0
+  standby_temperature_loss_tick: 0.002
+
+devices:
+  - device_id: "shower_1"
+    taxonomy: { category: 5 }
+    electrical_profile: { type: 1, max_watts: 0.0, standby_watts: 0.0 }
+    water_profile: { hot_lpm: 9.5, cold_lpm: 0.0 }
+  - device_id: "bathroom_sink"
+    taxonomy: { category: 5 }
+    electrical_profile: { type: 1, max_watts: 0.0, standby_watts: 0.0 }
+    water_profile: { hot_lpm: 2.0, cold_lpm: 2.0 }
+  - device_id: "microwave_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 1200.0, standby_watts: 3.0 }
+  - device_id: "cooker_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 3500.0, standby_watts: 2.0 }
+  - device_id: "big_tv"
+    taxonomy: { category: 4 }
+    electrical_profile: { type: 1, max_watts: 200.0, standby_watts: 10.0 }
+  - device_id: "kitchen_radio"
+    taxonomy: { category: 4 }
+    electrical_profile: { type: 1, max_watts: 15.0, standby_watts: 1.0 }
+
+meters:
+  - meter_id: "energy"
+    max: 100.0
+    base_decay_per_hour: 6.0 
+    curve: "linear"
+  - meter_id: "hunger"
+    max: 100.0
+    base_decay_per_hour: 12.0 
+    curve: "exponential"
+  - meter_id: "hygiene"
+    max: 100.0
+    base_decay_per_hour: 10.0 
+    curve: "exponential" 
+  - meter_id: "work_duty"
+    max: 100.0
+    base_decay_per_hour: 12.0
+    curve: "linear"
+  - meter_id: "chore_duty"
+    max: 100.0
+    base_decay_per_hour: 10.0
+    curve: "linear"
+  - meter_id: "entertainment"
+    max: 100.0
+    base_decay_per_hour: 12.0
+    curve: "linear"
+
+actions:
+  - action_id: "sleep_in_bed"
+    interruptible: true
+    # FIX 1: High satisfaction so they actually rest and wake up organically!
+    satisfies: { energy: 150.0 } 
+    bonus_curves:
+      - { context_key: "time.hour_float", peak: 24.0, width: 4.0, magnitude: 60.0 }
+      - { context_key: "time.hour_float", peak: 3.0, width: 4.0, magnitude: 60.0 }
+    duration: { type: 3, value: "8h" }
+
+  - action_id: "brush_teeth"
+    device_id: "bathroom_sink"
+    satisfies: { hygiene: 40.0 } 
+    duration: { type: 3, value: "5m" }
+
+  - action_id: "quick_shower"
+    device_id: "shower_1"
+    satisfies: { hygiene: 100.0 } 
+    costs: { energy: 2.0 }
+    duration: { type: 3, value: "15m" }
+
+  - action_id: "eat_breakfast"
+    device_id: "microwave_1"
+    satisfies: { hunger: 100.0 } 
+    available_when:
+      - { context_key: "time.hour", operator: 4, value: "11.0" }
+    duration: { type: 3, value: "15m" }
+
+  - action_id: "listen_to_morning_radio"
+    device_id: "kitchen_radio"
+    # FIX 2: Capped at 40. Will never beat starving/dirty.
+    satisfies: { entertainment: 40.0 }
+    available_when:
+      - { context_key: "time.hour", operator: 4, value: "10.0" } 
+    duration: { type: 3, value: "15m" }
+
+  - action_id: "go_to_work"
+    satisfies: { work_duty: 50.0 } 
+    costs: { energy: 40.0 }
+    available_when: 
+      - { context_key: "time.hour", operator: 3, value: "7.0" } 
+      - { context_key: "time.hour", operator: 4, value: "18.0" } 
+    bonus_curves:
+      - { context_key: "time.hour_float", peak: 8.75, width: 0.5, magnitude: 150.0 } 
+    duration: { type: 3, value: "9h" } 
+
+  - action_id: "cook_and_eat_dinner"
+    device_id: "cooker_1"
+    satisfies: { hunger: 100.0, chore_duty: 80.0 } 
+    costs: { energy: 10.0 }
+    available_when:
+      - { context_key: "time.hour", operator: 3, value: "17.0" } 
+    duration: { type: 3, value: "1h" }
+
+  - action_id: "read_book"
+    # FIX 2: Capped at 40.
+    satisfies: { entertainment: 40.0 }
+    duration: { type: 3, value: "30m" }
+
+  - action_id: "watch_tv"
+    device_id: "big_tv"
+    # FIX 2: Capped at 40.
+    satisfies: { entertainment: 40.0 }
+    duration: { type: 3, value: "1h" }
+
+  - action_id: "idle_home"
+    satisfies: { energy: 5.0 }
+    duration: { type: 3, value: "10m" }
+
+actors:
+  - actor_id: "single_person"
+    type: "working_adult"
+    ai_model: "utility"
+    starting_meters:
+      energy: 10.0      
+      hygiene: 70.0    
+      hunger: 80.0     
+      work_duty: 100.0 
+      chore_duty: 100.0 
+      entertainment: 100.0

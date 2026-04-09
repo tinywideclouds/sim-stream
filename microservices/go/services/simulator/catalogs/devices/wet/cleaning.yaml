@@ -1,0 +1,38 @@
+# catalogs/devices/wet/cleaning.yaml
+devices:
+  # 1. Washing Machine
+  - id: "washing_machine_standard"
+    tags: ["laundry", "wet_cleaning", "chore_appliance"]
+    template:
+      taxonomy: { category: 5 }
+      electrical_profile: 
+        type: 1
+        max_watts: 2000.0 # Peak draw when heating the water
+        standby_watts: 2.0
+      water_profile:
+        cold_lpm: 2.5 # Draws only cold water
+        hot_lpm: 0.0
+
+  # 2. Tumble Dryer (The Grid Punisher)
+  - id: "tumble_dryer_vented"
+    tags: ["laundry", "drying", "chore_appliance"]
+    template:
+      taxonomy: { category: 5 }
+      electrical_profile: 
+        type: 1
+        max_watts: 2500.0 # Sustained high draw
+        standby_watts: 1.0
+      # No water profile needed
+
+  # 3. Dishwasher
+  - id: "dishwasher_standard"
+    tags: ["dishwashing", "wet_cleaning", "chore_appliance"]
+    template:
+      taxonomy: { category: 5 }
+      electrical_profile: 
+        type: 1
+        max_watts: 1800.0 # Heating cycle
+        standby_watts: 3.0
+      water_profile:
+        cold_lpm: 1.5
+        hot_lpm: 0.0

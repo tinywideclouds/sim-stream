@@ -1,0 +1,19 @@
+# catalogs/devices/cooking/gas_cookers.yaml
+devices:
+  - id: "gas_oven_standard"
+    tags: ["cooking_high_load", "oven", "essential_cooking", "gas_appliance"]
+    template:
+      taxonomy: { category: 1 }
+      electrical_profile: 
+        type: 1
+        max_watts: 25.0 # Just the internal light, clock, and ignition spark
+        standby_watts: 2.0
+  
+  - id: "freestanding_gas_range"
+    tags: ["cooking_high_load", "oven", "hob", "essential_cooking", "gas_appliance"]
+    template:
+      taxonomy: { category: 1 }
+      electrical_profile: 
+        type: 1
+        max_watts: 40.0 # Multi-spark ignition and displays
+        standby_watts: 3.0

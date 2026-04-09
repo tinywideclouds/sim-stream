@@ -20,7 +20,7 @@ func TestScheduler_ScheduleDay(t *testing.T) {
 	scheduler := engine.NewScheduler(sampler)
 
 	// Mock an actor with a fuzzy morning routine
-	actor := domain.ActorTemplate{
+	actor := domain.Actor{
 		ActorID: "parent_1",
 		Routines: []domain.ActorRoutine{
 			{
@@ -42,7 +42,7 @@ func TestScheduler_ScheduleDay(t *testing.T) {
 	// Base date is midnight on Jan 1, 2026
 	baseDate := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
-	snap := parsers.EnvironmentSnapshot{}
+	snap := parsers.StateSnapshot{}
 
 	schedules, err := scheduler.ScheduleDay(actor, baseDate, snap)
 	if err != nil {

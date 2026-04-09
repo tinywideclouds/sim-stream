@@ -1,0 +1,153 @@
+archetype_id: "retired_001"
+description: "Retired couple. Scheduled morning heating, midday shopping, lots of TV, and full meals."
+base_temp_c: 19.0
+insulation_decay_rate: 0.05 # Well insulated
+
+grid:
+  nominal_voltage: 230.0
+  wave_center: 230.0
+  wave_amplitude: 3.0
+  peak_hour: 2.0
+  jitter_min: -0.5
+  jitter_max: 0.5
+
+devices:
+  - device_id: "big_tv"
+    taxonomy: { category: 4 }
+    electrical_profile: { type: 1, max_watts: 200.0, standby_watts: 10.0 }
+  - device_id: "kettle_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 2000.0, standby_watts: 0.0 }
+  - device_id: "toaster_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 850.0, standby_watts: 0.0 }
+  - device_id: "cooker_1"
+    taxonomy: { category: 1 }
+    electrical_profile: { type: 1, max_watts: 2000.0, standby_watts: 2.0 }
+  - device_id: "central_heating"
+    taxonomy: { category: 2 }
+    electrical_profile: { type: 1, max_watts: 2500.0, standby_watts: 0.0 }
+  - device_id: "fridge_1"
+    taxonomy: { category: 3 }
+    electrical_profile: { type: 1, max_watts: 120.0, standby_watts: 10.0 }
+
+routine_templates:
+  - routine_id: "morning_breakfast"
+    description: "Tea and toast."
+    tasks: ["boil_kettle", "make_toast"]
+  - routine_id: "light_lunch"
+    description: "Soup on the stove and tea."
+    tasks: ["cook_lunch", "boil_kettle"]
+  - routine_id: "afternoon_tv"
+    description: "Watching the afternoon game shows."
+    tasks: ["watch_tv"]
+  - routine_id: "cook_and_eat_dinner"
+    description: "Cooking a proper evening meal."
+    tasks: ["cook_dinner"]
+  - routine_id: "scheduled_morning_heat"
+    description: "System pre-heats the house."
+    tasks: ["boost_heating"] 
+
+scenarios:
+  - scenario_id: "boil_kettle"
+    actions:
+      - device_id: "kettle_1"
+        state: 1
+        parameters: { duration: { type: 3, value: "4m" } }
+  - scenario_id: "make_toast"
+    actions:
+      - device_id: "toaster_1"
+        state: 1
+        parameters: { duration: { type: 3, value: "3m" } }
+  - scenario_id: "cook_lunch"
+    actions:
+      - device_id: "cooker_1"
+        state: 1
+        parameters: { duration: { type: 1, mean: "10m", std_dev: "2m" } }
+  - scenario_id: "cook_dinner"
+    actions:
+      - device_id: "cooker_1"
+        state: 1
+        parameters: { duration: { type: 1, mean: "35m", std_dev: "5m" } }
+  - scenario_id: "watch_tv"
+    actions:
+      - device_id: "big_tv"
+        state: 1
+        parameters: { duration: { type: 1, mean: "3h00m", std_dev: "30m" } }
+  - scenario_id: "boost_heating"
+    actions:
+      - device_id: "central_heating"
+        state: 1
+        parameters: { duration: { type: 3, value: "45m" } }
+
+  # Cozy Thermostat (Keeps it at 19C all day)
+  - scenario_id: "cozy_thermostat"
+    actor_tags: ["system"]
+    trigger:
+      type: 2
+      base_conditions:
+        - context_key: "indoor_temp_c"
+          operator: 4 
+          value: "19.0"
+      fatigue_rule: { lockout_duration: "30m" }
+    actions:
+      - device_id: "central_heating"
+        state: 1
+        parameters: { duration: { type: 3, value: "15m" } }
+        
+  - scenario_id: "fridge_compressor"
+    actor_tags: ["system"]
+    trigger:
+      type: 2 
+      base_conditions: [] 
+      fatigue_rule: { lockout_duration: "45m" } 
+    actions:
+      - device_id: "fridge_1"
+        state: 1 
+        parameters: { duration: { type: 3, value: "15m" } }
+
+actors:
+  - actor_id: "elder_1"
+    type: "elderly"
+    routines:
+      - routine_id: "morning_breakfast"
+        trigger: { type: 1, mean: "07h30m", std_dev: "10m" }
+        deadline: { type: 1, mean: "08h30m", std_dev: "15m" }
+      # Out shopping 09:00 - 12:30
+      - routine_id: "light_lunch"
+        trigger: { type: 1, mean: "12h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "13h30m", std_dev: "10m" }
+      - routine_id: "afternoon_tv"
+        trigger: { type: 1, mean: "13h30m", std_dev: "20m" }
+        deadline: { type: 1, mean: "17h00m", std_dev: "10m" }
+      - routine_id: "cook_and_eat_dinner"
+        trigger: { type: 1, mean: "17h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "18h30m", std_dev: "10m" }
+
+  - actor_id: "elder_2"
+    type: "elderly"
+    routines:
+      # Elder 2 sleeps in a bit later
+      - routine_id: "morning_breakfast"
+        trigger: { type: 1, mean: "08h00m", std_dev: "15m" }
+        deadline: { type: 1, mean: "09h00m", std_dev: "10m" }
+      # Joins for dinner!
+      - routine_id: "cook_and_eat_dinner"
+        trigger: { type: 1, mean: "17h30m", std_dev: "15m" }
+        deadline: { type: 1, mean: "18h30m", std_dev: "10m" }
+
+  - actor_id: "house_system"
+    type: "system"
+    routines:
+      - routine_id: "scheduled_morning_heat"
+        trigger: { type: 3, value: "06h30m" } 
+        deadline: { type: 3, value: "07h30m" }
+
+collective_events:
+  - event_id: "shared_dinner"
+    lead_actor: "elder_1" # Elder 1 is driving the dinner schedule
+    dependent_actors: 
+      - actor_id: "elder_2"
+        friction_weight: 0.9  # Elder 2 is very happy to compromise and eat when it's ready
+        patience_limit: "30m" 
+    action: "cook_and_eat_dinner"

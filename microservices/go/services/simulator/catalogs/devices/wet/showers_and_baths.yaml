@@ -1,0 +1,40 @@
+# catalogs/devices/wet/showers_and_baths.yaml
+devices:
+  # 1. The Electric Power Shower (Grid Spiker)
+  - id: "electric_shower_9kw"
+    tags: ["shower", "wet_cleaning", "electric_water_heating"]
+    template:
+      taxonomy: { category: 5 } # Wet Appliance
+      electrical_profile: 
+        type: 1
+        max_watts: 9000.0 # Massive, immediate grid draw
+        standby_watts: 0.0
+      water_profile:
+        cold_lpm: 0.0
+        hot_lpm: 8.0 # Heats cold mains water instantly, doesn't drain the hot tank
+
+  # 2. The Mixer Shower (Tank Drainer)
+  - id: "mixer_shower_standard"
+    tags: ["shower", "wet_cleaning", "tank_dependent"]
+    template:
+      taxonomy: { category: 5 }
+      electrical_profile: 
+        type: 1
+        max_watts: 0.0 # No grid draw
+        standby_watts: 0.0
+      water_profile:
+        cold_lpm: 4.0
+        hot_lpm: 6.0 # Rapidly drains the hot water tank!
+
+  # 3. The Bathtub
+  - id: "standard_bathtub"
+    tags: ["bath", "wet_cleaning", "tank_dependent"]
+    template:
+      taxonomy: { category: 5 }
+      electrical_profile: 
+        type: 1
+        max_watts: 0.0
+        standby_watts: 0.0
+      water_profile:
+        cold_lpm: 5.0
+        hot_lpm: 15.0 # Dumps the tank capacity very quickly

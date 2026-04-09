@@ -1,0 +1,28 @@
+# catalogs/devices/cooking/small_appliances.yaml
+devices:
+  - id: "kettle_fast_boil"
+    tags: ["hot_beverage", "kettle"]
+    template:
+      taxonomy: { category: 1 }
+      electrical_profile: 
+        type: 1
+        max_watts: 3000.0 # Short duration, high spike
+        standby_watts: 0.0
+
+  - id: "toaster_2_slice"
+    tags: ["breakfast_prep", "toaster"]
+    template:
+      taxonomy: { category: 1 }
+      electrical_profile: 
+        type: 1
+        max_watts: 850.0
+        standby_watts: 0.0
+
+  - id: "coffee_machine_espresso"
+    tags: ["hot_beverage", "coffee_maker"]
+    template:
+      taxonomy: { category: 1 }
+      electrical_profile: 
+        type: 1
+        max_watts: 1450.0 # Boiler heating cycle
+        standby_watts: 1.0

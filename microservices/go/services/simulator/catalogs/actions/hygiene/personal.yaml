@@ -1,0 +1,33 @@
+# catalogs/actions/hygiene/personal.yaml
+actions:
+  - id: "quick_shower"
+    requires_device_tag: "shower"
+    template:
+      action_id: "quick_shower"
+      interruptible: false
+      initiation_friction: 5.0
+      satisfies:
+        hygiene: { amount: 80.0, curve: "linear" }
+        energy: { amount: 5.0, curve: "linear" } # Showers wake you up slightly
+      duration: { type: 1, mean: "10m", std_dev: "2m" }
+
+  - id: "long_bath"
+    requires_device_tag: "bath"
+    template:
+      action_id: "long_bath"
+      interruptible: true
+      initiation_friction: 10.0
+      satisfies:
+        hygiene: { amount: 100.0, curve: "linear" }
+        leisure: { amount: 30.0, curve: "linear" } # Baths are relaxing
+      duration: { type: 1, mean: "35m", std_dev: "10m" }
+
+  - id: "brush_teeth_and_wash_face"
+    requires_device_tag: "shower" # Fallback to bathroom tag
+    template:
+      action_id: "brush_teeth_and_wash_face"
+      interruptible: true
+      initiation_friction: 1.0
+      satisfies:
+        hygiene: { amount: 15.0, curve: "linear" }
+      duration: { type: 3, value: "4m" }

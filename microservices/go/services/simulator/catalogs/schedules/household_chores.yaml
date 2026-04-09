@@ -1,0 +1,19 @@
+# catalogs/schedules/household_chores.yaml
+collective_events:
+  - id: "weekend_deep_clean"
+    selection:
+      weight: 0.7
+      default_frequency: "1_per_week"
+    template:
+      event_id: "weekend_deep_clean"
+      action: "vacuum_and_dust"
+      base_fragility: 0.20 # Often procrastinated away
+      abort_conditions: []
+      lead_requirement: "adult"
+      dependent_rules:
+        - type: "adult"
+          friction_weight: 0.7
+          patience_limit: "30m"
+        - type: "child"
+          friction_weight: 0.95
+          patience_limit: "60m"

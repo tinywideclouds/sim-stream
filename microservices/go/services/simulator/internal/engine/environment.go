@@ -1,10 +1,72 @@
 package engine
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/tinywideclouds/go-sim-probability/pkg/parsers"
+	"github.com/tinywideclouds/go-sim-schema/domain"
 )
+
+// EvaluateCondition checks an environment variable against the domain struct using the typed enum.
+func EvaluateCondition(cond domain.EngineCondition, snapshot parsers.StateSnapshot) bool {
+	val, exists := snapshot[cond.ContextKey]
+	if !exists {
+		return false
+	}
+
+	// Safely attempt float conversion for numeric comparisons
+	envValStr := fmt.Sprintf("%v", val)
+	envValFloat, err1 := strconv.ParseFloat(envValStr, 64)
+	condValFloat, err2 := strconv.ParseFloat(cond.Value, 64)
+
+	isNumeric := err1 == nil && err2 == nil
+
+	switch cond.Operator {
+	case domain.ConditionOperatorEq:
+		if isNumeric {
+			return envValFloat == condValFloat
+		}
+		return envValStr == cond.Value
+
+	case domain.ConditionOperatorNeq:
+		if isNumeric {
+			return envValFloat != condValFloat
+		}
+		return envValStr != cond.Value
+
+	case domain.ConditionOperatorGt:
+		if isNumeric {
+			return envValFloat > condValFloat
+		}
+		return false
+
+	case domain.ConditionOperatorLt:
+		if isNumeric {
+			return envValFloat < condValFloat
+		}
+		return false
+
+	case domain.ConditionOperatorGte:
+		if isNumeric {
+			return envValFloat >= condValFloat
+		}
+		return false
+
+	case domain.ConditionOperatorLte:
+		if isNumeric {
+			return envValFloat <= condValFloat
+		}
+		return false
+
+	case domain.ConditionOperatorUnspecified:
+		return false
+
+	default:
+		return false
+	}
+}
 
 // WeatherProvider defines how the engine asks about the outside world.
 // For the MVP, this will be backed by a struct holding the Milan CSV data in memory.
@@ -16,10 +78,10 @@ type WeatherProvider interface {
 
 // BuildEnvironmentSnapshot constructs the exact state of the world for the current tick.
 // This is fed directly into the probability modifiers to shift human behavior.
-func BuildEnvironmentSnapshot(simTime time.Time, weather WeatherProvider) parsers.EnvironmentSnapshot {
+func BuildEnvironmentSnapshot(simTime time.Time, weather WeatherProvider) parsers.StateSnapshot {
 
 	// Pre-allocate the map to avoid resizing during the hot loop
-	snap := make(parsers.EnvironmentSnapshot, 10)
+	snap := make(parsers.StateSnapshot, 10)
 
 	// 1. Time-based attributes
 	snap["time.hour"] = float64(simTime.Hour())

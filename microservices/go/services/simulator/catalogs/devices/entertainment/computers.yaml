@@ -1,0 +1,19 @@
+# catalogs/devices/entertainment/computers.yaml
+devices:
+  - id: "standard_laptop"
+    tags: ["computer", "wfh_device"]
+    template:
+      taxonomy: { category: 7 } # ICT
+      electrical_profile: 
+        type: 1
+        max_watts: 65.0 # Power brick max draw
+        standby_watts: 2.0
+
+  - id: "high_end_gaming_pc"
+    tags: ["computer", "gaming_pc", "high_draw"]
+    template:
+      taxonomy: { category: 7 }
+      electrical_profile: 
+        type: 1
+        max_watts: 550.0 # Heavy GPU/CPU sustained load
+        standby_watts: 8.0

@@ -1,0 +1,31 @@
+compositions:
+  - id: "family_household"
+    description: "A high-infrastructure household with adults and children."
+    persona_requirements:
+      - type: "adult"
+        min: 1
+        max: 2
+      - type: "child"
+        min: 1
+        max: 3
+    required_device_tags:
+      - "essential_cooking"
+      - "microwave"
+      - "hot_beverage"
+      - "refrigeration"
+      - "heating_system"
+      - "water_heating"
+      - "shower"
+      - "laundry"
+      - "television"
+    system_ids:
+      - "ambient_thermostat"
+    required_water_system_tag: "large_residential"
+    routine_ids: []
+    alarm_ids: []
+    event_ids:
+      - "family_dinner"
+      - "shared_movie_night"
+      - "sunday_park_trip"
+      - "big_grocery_shop"
+      - "weekend_deep_clean"

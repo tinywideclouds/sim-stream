@@ -8,51 +8,37 @@ import (
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
-// ScheduledRoutine holds the exact, mathematically rolled times for a specific routine for the current day.
+// ScheduledRoutine holds the exact, mathematically rolled times for a specific routine.
 type ScheduledRoutine struct {
 	RoutineID      string
 	TargetStart    time.Time
 	TargetDeadline time.Time
+	Modifiers      []domain.DistributionModifier // NEW: Store for live evaluation
 	HasStarted     bool
 }
 
-// Scheduler handles the daily fuzzy math for all actors.
 type Scheduler struct {
 	sampler *generator.Sampler
 }
 
-// NewScheduler creates a new daily scheduler.
 func NewScheduler(sampler *generator.Sampler) *Scheduler {
 	return &Scheduler{sampler: sampler}
 }
 
-// ScheduleDay calculates the concrete start and deadline times for a single actor's routines.
-// It applies environmental modifiers (like weather) before rolling the dice.
-func (s *Scheduler) ScheduleDay(actor domain.ActorTemplate, baseDate time.Time, ctx parsers.EnvironmentSnapshot) ([]ScheduledRoutine, error) {
+// ScheduleDay calculates the baseline start and deadline times.
+func (s *Scheduler) ScheduleDay(actor domain.Actor, baseDate time.Time, snap parsers.StateSnapshot) ([]ScheduledRoutine, error) {
 	var schedules []ScheduledRoutine
 
 	for _, r := range actor.Routines {
-		// 1. Apply Modifiers to the Trigger (Start Time)
-		modTrigger, err := parsers.ApplyModifiers(r.Trigger, ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		// Roll the modified Trigger
-		startOffset, err := s.sampler.Duration(modTrigger)
+		// Roll baseline start
+		startOffset, err := s.sampler.Duration(r.Trigger)
 		if err != nil {
 			return nil, err
 		}
 		targetStart := baseDate.Add(startOffset)
 
-		// 2. Apply Modifiers to the Deadline (End Time)
-		modDeadline, err := parsers.ApplyModifiers(r.Deadline, ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		// Roll the modified Deadline
-		deadlineOffset, err := s.sampler.Duration(modDeadline)
+		// Roll baseline deadline
+		deadlineOffset, err := s.sampler.Duration(r.Deadline)
 		if err != nil {
 			return nil, err
 		}
@@ -62,6 +48,8 @@ func (s *Scheduler) ScheduleDay(actor domain.ActorTemplate, baseDate time.Time, 
 			RoutineID:      r.RoutineID,
 			TargetStart:    targetStart,
 			TargetDeadline: targetDeadline,
+			Modifiers:      r.Trigger.Modifiers, // Pass rules to the live engine
+			HasStarted:     false,
 		})
 	}
 

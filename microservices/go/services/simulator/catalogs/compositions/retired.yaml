@@ -1,0 +1,25 @@
+compositions:
+  - id: "retired_household"
+    description: "Elderly occupants with highly disciplined routines."
+    persona_requirements:
+      - type: "elderly"
+        min: 1
+        max: 2
+    required_device_tags:
+      - "essential_cooking"
+      - "hot_beverage"
+      - "refrigeration"
+      - "heating_system"
+      - "water_heating"
+      - "bath"
+      - "television"
+    system_ids:
+      - "ambient_thermostat"
+    required_water_system_tag: "large_residential"
+    routine_ids: []
+    alarm_ids: []
+    event_ids:
+      - "family_dinner"
+      - "shared_movie_night"
+      - "sunday_park_trip"
+      - "big_grocery_shop"

@@ -1,0 +1,17 @@
+household_id: "experiment_02"
+archetype: "stressed_worker"
+traits: 
+  - "anxious"
+  - "disciplined"
+preferences:
+  breakfast_type: "cooked"
+  wash_routine: "quick_shower"
+appliances: 
+  - "shower_1"
+  - "cooker_1"
+schedule:
+  target_sleep_hours: 8.0
+  bed_time: 23.5    
+  dinner_time: 19.0 
+  work_start: 8.5   
+  work_duration: 9.0

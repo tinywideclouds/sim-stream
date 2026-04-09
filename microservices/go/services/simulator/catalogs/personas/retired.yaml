@@ -1,0 +1,133 @@
+# catalogs/personas/retired.yaml
+personas:
+  - id: "retired_standard"
+    type: "elderly"
+    traits: ["disciplined"]
+    starting_meters: { energy: 70.0, hunger: 70.0, hygiene: 80.0, leisure: 80.0 }
+    phases:
+      - phase_id: "early_sleep"
+        type: "sleep"
+        anchor_time: "22:00"
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
+            leisure: { amount: 5.0, over: "8h", curve: "linear" }
+      - phase_id: "midday_errands"
+        type: "away"
+        anchor_time: "10:30"
+        gravity: 0.7
+        duration: 
+          type: 1 
+          mean: "2h"
+          std_dev: "30m"
+          flexibility: "1h"
+        modifiers:
+          application: "block_end"
+          effects: 
+            energy: { amount: -20.0, over: "2h", curve: "linear" }
+            hunger: { amount: -20.0, over: "2h", curve: "linear" }
+            hygiene: { amount: -10.0, over: "2h", curve: "linear" }
+            leisure: { amount: 10.0, over: "2h", curve: "linear" }
+
+  - id: "retired_homebody"
+    type: "elderly"
+    traits: ["lazy"]
+    starting_meters: { energy: 60.0, hunger: 60.0, hygiene: 70.0, leisure: 60.0 }
+    phases: 
+      - phase_id: "long_sleep"
+        type: "sleep"
+        anchor_time: "22:30"
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "9h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 85.0, over: "9h", curve: "front_loaded" }
+            hunger: { amount: -40.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -20.0, over: "9h", curve: "linear" }
+            leisure: { amount: 5.0, over: "9h", curve: "linear" }
+
+  - id: "retired_active"
+    type: "elderly"
+    traits: ["disciplined"]
+    starting_meters: { energy: 80.0, hunger: 70.0, hygiene: 80.0, leisure: 60.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "21:30"
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "7h30m"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 75.0, over: "7h30m", curve: "front_loaded" }
+            hunger: { amount: -30.0, over: "7h30m", curve: "linear" }
+            hygiene: { amount: -15.0, over: "7h30m", curve: "linear" }
+            leisure: { amount: 5.0, over: "7h30m", curve: "linear" }
+      - phase_id: "morning_activities"
+        type: "away"
+        anchor_time: "08:30"
+        gravity: 0.8
+        duration: 
+          type: 1 
+          mean: "4h"
+          std_dev: "20m"
+          flexibility: "1h"
+        modifiers:
+          application: "block_end"
+          effects: 
+            energy: { amount: -40.0, over: "4h", curve: "linear" }
+            hunger: { amount: -50.0, over: "4h", curve: "linear" }
+            hygiene: { amount: -40.0, over: "4h", curve: "linear" }
+            leisure: { amount: 30.0, over: "4h", curve: "linear" }
+
+  - id: "retired_erratic"
+    type: "elderly"
+    traits: ["chaotic"]
+    starting_meters: { energy: 65.0, hunger: 50.0, hygiene: 60.0, leisure: 70.0 }
+    phases:
+      - phase_id: "night_sleep"
+        type: "sleep"
+        anchor_time: "23:00"
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
+            leisure: { amount: 5.0, over: "8h", curve: "linear" }
+      - phase_id: "afternoon_visiting"
+        type: "away"
+        anchor_time: "14:00"
+        gravity: 0.6
+        duration: 
+          type: 1 
+          mean: "3h"
+          std_dev: "60m"
+          flexibility: "1h30m"
+        modifiers:
+          application: "block_end"
+          effects: 
+            energy: { amount: -25.0, over: "3h", curve: "linear" }
+            hunger: { amount: 10.0, over: "3h", curve: "linear" }
+            hygiene: { amount: -10.0, over: "3h", curve: "linear" }
+            leisure: { amount: 40.0, over: "3h", curve: "linear" }

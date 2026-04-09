@@ -1,36 +1,7 @@
+// domain/archetype.go
 package domain
 
-// FatigueRule prevents an actor from spamming the same scenario.
-type FatigueRule struct {
-	LockoutDuration   string  `yaml:"lockout_duration"`
-	RecoveryDuration  string  `yaml:"recovery_duration"`
-	PenaltyMultiplier float64 `yaml:"penalty_multiplier"`
-}
-
-// Trigger defines how an ambient scenario is initiated (if not part of a routine).
-type Trigger struct {
-	Type           TriggerType             `yaml:"type"`
-	Distribution   ProbabilityDistribution `yaml:"distribution"`
-	BaseConditions []EngineCondition       `yaml:"base_conditions"`
-	FatigueRule    FatigueRule             `yaml:"fatigue_rule"`
-}
-
-// ScenarioAction is a specific physical interaction with a device.
-type ScenarioAction struct {
-	DeviceID       string                             `yaml:"device_id"`
-	State          DeviceState                        `yaml:"state"`
-	DelayFromStart string                             `yaml:"delay_from_start"`
-	Parameters     map[string]ProbabilityDistribution `yaml:"parameters"`
-}
-
-// ScenarioTemplate is an isolated behavior unit (e.g., "Make Tea", "Shower").
-type ScenarioTemplate struct {
-	ScenarioID string           `yaml:"scenario_id"`
-	ActorTags  []string         `yaml:"actor_tags"` // e.g., ["adult", "teen"] for ambient matching
-	Trigger    *Trigger         `yaml:"trigger"`    // Pointer: Nil if executed via a Routine Task
-	Actions    []ScenarioAction `yaml:"actions"`
-}
-
+// GridTemplate defines the regional physics of the local power grid.
 type GridTemplate struct {
 	NominalVoltage float64 `yaml:"nominal_voltage"`
 	WaveCenter     float64 `yaml:"wave_center"`
@@ -40,16 +11,36 @@ type GridTemplate struct {
 	JitterMax      float64 `yaml:"jitter_max"`
 }
 
+// WaterSystemTemplate defines the physical plumbing and regional water properties for this specific house.
+type WaterSystemTemplate struct {
+	TankCapacityLiters         float64 `yaml:"tank_capacity_liters"`
+	MainsWaterTempCelsius      float64 `yaml:"mains_water_temp_celsius"`
+	MaxTankTempCelsius         float64 `yaml:"max_tank_temp_celsius"`
+	StandbyTemperatureLossTick float64 `yaml:"standby_temperature_loss_tick"`
+}
+
 // NodeArchetype is the root document representing a full house/building simulation.
 type NodeArchetype struct {
-	ArchetypeID         string             `yaml:"archetype_id"`
-	Description         string             `yaml:"description"`
-	BaseTempC           float64            `yaml:"base_temp_c"`
-	InsulationDecayRate float64            `yaml:"insulation_decay_rate"`
-	Actors              []ActorTemplate    `yaml:"actors"`
-	Devices             []DeviceTemplate   `yaml:"devices"`
-	RoutineTemplates    []RoutineTemplate  `yaml:"routine_templates"`
-	Scenarios           []ScenarioTemplate `yaml:"scenarios"`
-	CollectiveEvents    []CollectiveEvent  `yaml:"collective_events"`
-	Grid                *GridTemplate      `yaml:"grid"`
+	ArchetypeID         string               `yaml:"archetype_id"`
+	Description         string               `yaml:"description"`
+	BaseTempC           float64              `yaml:"base_temp_c"`
+	InsulationDecayRate float64              `yaml:"insulation_decay_rate"`
+	Grid                *GridTemplate        `yaml:"grid"`
+	WaterSystem         *WaterSystemTemplate `yaml:"water_system"`
+
+	// The Physical Environment
+	Devices   []DeviceTemplate   `yaml:"devices"`
+	Scenarios []ScenarioTemplate `yaml:"scenarios"`
+
+	// The Entities (Humans & Systems)
+	Actors []Actor `yaml:"actors"`
+
+	// Routine Blueprints (The Rails)
+	RoutineTemplates []RoutineTemplate `yaml:"routine_templates"`
+	CollectiveEvents []CollectiveEvent `yaml:"collective_events"`
+
+	// Utility Blueprints (The Rubber Bands)
+	Meters  []MeterTemplate  `yaml:"meters"`
+	Actions []ActionTemplate `yaml:"actions"`
+	Alarms  []AlarmTemplate  `yaml:"alarms"`
 }

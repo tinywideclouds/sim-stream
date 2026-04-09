@@ -1,0 +1,19 @@
+# catalogs/devices/climate/refrigeration.yaml
+devices:
+  - id: "fridge_freezer_standard"
+    tags: ["refrigeration", "always_on"]
+    template:
+      taxonomy: { category: 3 } # Cold Appliance
+      electrical_profile: 
+        type: 1
+        max_watts: 150.0 # Compressor active
+        standby_watts: 10.0 # Electronics and idle
+
+  - id: "fridge_freezer_american"
+    tags: ["refrigeration", "always_on", "high_capacity"]
+    template:
+      taxonomy: { category: 3 }
+      electrical_profile: 
+        type: 1
+        max_watts: 300.0
+        standby_watts: 25.0
