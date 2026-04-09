@@ -1,0 +1,35 @@
+actions:
+  - id: "quick_cold_breakfast"
+    requires_device_tag: "refrigeration" # Grab milk/cereal or yogurt
+    template:
+      action_id: "quick_cold_breakfast"
+      interruptible: true
+      initiation_friction: 2.0
+      satisfies:
+        hunger: { amount: 35.0, curve: "front_loaded" }
+      duration: { type: 1, mean: "10m", std_dev: "2m" }
+      bonus_curves:
+        - context_key: "time.hour_float"
+          peak: 7.5
+          width: 2.0
+          magnitude: 50.0
+
+  - id: "microwave_meal"
+    requires_device_tag: "microwave"
+    template:
+      action_id: "microwave_meal"
+      interruptible: true
+      initiation_friction: 2.0 
+      satisfies:
+        hunger: { amount: 45.0, curve: "front_loaded" }
+      duration: { type: 1, mean: "5m", std_dev: "1m" }
+
+  - id: "make_toast_snack"
+    requires_device_tag: "toaster" 
+    template:
+      action_id: "make_toast_snack"
+      interruptible: true
+      initiation_friction: 1.0
+      satisfies:
+        hunger: { amount: 15.0, curve: "linear" }
+      duration: { type: 3, value: "3m" }

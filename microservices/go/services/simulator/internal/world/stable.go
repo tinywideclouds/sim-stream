@@ -23,6 +23,7 @@ type UtilityBrain interface {
 	GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64
 	GetActorSnapshot(actorID string) parsers.StateSnapshot
 
+	InterruptCurrentTask(actorID string, state *engine.SimulationState) bool // ADD THIS LINE
 	ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill)
 }
 
@@ -409,4 +410,17 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 	debugLogs = append(debugLogs, utilDbg...)
 
 	return activeActors, anomalies, debugLogs
+}
+
+// Pass-throughs for Orchestrator multi-agent coordination
+func (se *StableEngine) InterruptCurrentTask(actorID string, state *engine.SimulationState) bool {
+	return se.utilityBrain.InterruptCurrentTask(actorID, state)
+}
+
+func (se *StableEngine) GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64 {
+	return se.utilityBrain.GetActionUrgency(actorID, actionID, state)
+}
+
+func (se *StableEngine) ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
+	se.utilityBrain.ForceTask(actorID, taskName, duration, startTime, satisfies)
 }

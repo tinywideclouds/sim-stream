@@ -10,6 +10,7 @@ import (
 type DeviceLedger struct {
 	State       domain.DeviceState
 	StateEndsAt time.Time // When the current task or cooldown finishes
+	LockedBy    string
 }
 
 // ActorLedger tracks the psychological and physical state of a human or system.
@@ -19,7 +20,28 @@ type ActorLedger struct {
 	RoutineStepIndex int                  // Which task in the array they are currently doing
 	StateEndsAt      time.Time            // When the current task finishes (or when they wake up)
 	Satiety          map[string]time.Time // Tracks fatigue lockouts: map[scenario_id]UnlockTime
+	CurrentCommitment	*Commitment
 }
+
+type Commitment struct {
+	ActionID		string
+	Role		string // "lead" or "participant"
+	ExpiresAt	time.Time
+ }
+type PendingEvent struct {
+	EventID         string
+	ActionID        string
+	DeviceID        string
+	InitiatorID     string
+	Participants    []string
+	GatheringEndsAt time.Time
+	IsExecuting     bool
+}
+
+type HouseholdLedger struct {
+	PendingEvents map[string]*PendingEvent
+	ResourceLocks	map[string]string    // DeviceID -> ActorID
+ }
 
 // SimulationState is the master ledger for the entire house at any given millisecond.
 type SimulationState struct {
@@ -33,6 +55,7 @@ type SimulationState struct {
 	// Entity Memory
 	Devices map[string]*DeviceLedger
 	Actors  map[string]*ActorLedger
+	House	HouseholdLedger
 
 	// Active Logging for CSV/BigQuery Output
 	ActiveEventIDs []string
@@ -47,6 +70,10 @@ func NewSimulationState(blueprint *domain.NodeArchetype, startTime time.Time) *S
 		HotWaterTankC:  55.0, // Default starting tank temperature
 		Devices:        make(map[string]*DeviceLedger),
 		Actors:         make(map[string]*ActorLedger),
+		House: HouseholdLedger{
+			PendingEvents: make(map[string]*PendingEvent),
+			ResourceLocks: make(map[string]string),
+		},
 		ActiveEventIDs: []string{},
 	}
 

@@ -17,7 +17,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
 
@@ -38,7 +38,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
 
@@ -59,7 +59,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
-            hunger: { amount: -25.0, over: "6h", curve: "linear" }
+            hunger: { amount: 20.0, over: "6h", curve: "linear" }
             hygiene: { amount: -10.0, over: "6h", curve: "linear" }
             leisure: { amount: 5.0, over: "6h", curve: "linear" }
 
@@ -80,7 +80,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
 
@@ -101,6 +101,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }

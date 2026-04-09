@@ -59,6 +59,22 @@ type BonusCurve struct {
 	Magnitude  float64 `yaml:"magnitude"`
 }
 
+type SharingType string
+
+const (
+	SharingStrictMutex SharingType = "strict_mutex" // One at a time (Shower)
+	SharingFreeRider   SharingType = "free_rider"   // One pays, others benefit (TV)
+	SharingScalable    SharingType = "scalable"     // Multiple people, linear cost increase (Kettle)
+)
+
+type SharingProfile struct {
+	Type                       SharingType `yaml:"type"`
+	GatheringWindow            string      `yaml:"gathering_window,omitempty"`
+	EnergyMultiplierPerActor   float64     `yaml:"energy_multiplier_per_actor,omitempty"`
+	DurationMultiplierPerActor float64     `yaml:"duration_multiplier_per_actor,omitempty"`
+	MaxParticipants            int         `yaml:"max_participants,omitempty"`
+}
+
 // ActionTemplate defines a dynamic choice an actor can make.
 type ActionTemplate struct {
 	ActionID           string                  `yaml:"action_id"`
@@ -74,5 +90,6 @@ type ActionTemplate struct {
 	Interruptible      bool                    `yaml:"interruptible"`
 	InitiationFriction float64                 `yaml:"initiation_friction,omitempty"`
 	ExpectedMeters     map[string]float64      `yaml:"expected_meters,omitempty"`
+	Sharing            *SharingProfile         `yaml:"sharing,omitempty"`
 	Duration           ProbabilityDistribution `yaml:"duration"`
 }

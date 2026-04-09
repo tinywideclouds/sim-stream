@@ -17,6 +17,9 @@ personas:
           application: "continuous"
           effects: 
             energy: { amount: 80.0, over: "7h30m", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away" 
         anchor_time: "08:30"
@@ -51,6 +54,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:00"
@@ -85,6 +91,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "21:30"
@@ -119,6 +128,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 85.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift_and_gym"
         type: "away"
         anchor_time: "08:00"
@@ -153,6 +165,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 70.0, over: "6h30m", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_and_drinks"
         type: "away"
         anchor_time: "09:00"
@@ -187,6 +202,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:30"
@@ -221,6 +239,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 90.0, over: "8h30m", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:00"
@@ -255,6 +276,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "13:00"
@@ -289,6 +313,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:30"
@@ -323,6 +350,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "7h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "06:00"

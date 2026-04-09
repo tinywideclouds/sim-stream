@@ -100,6 +100,61 @@ func NewUtilityEngine(sampler *generator.Sampler) *UtilityEngine {
 	}
 }
 
+// CanSafelyWait verifies if an actor can survive a given wait time without hitting biological burnout (starving).
+func (ue *UtilityEngine) CanSafelyWait(actorID string, projectedWait time.Duration, state *engine.SimulationState) bool {
+	actorMeters, exists := ue.meters[actorID]
+	if !exists {
+		return false
+	}
+
+	waitHours := projectedWait.Hours()
+	const safetyThreshold = 5.0 // Reject the wait if any meter would drop below 5%
+
+	for _, m := range state.Blueprint.Meters {
+		if m.BaseDecayPerHour > 0 {
+			currentVal := actorMeters[m.MeterID]
+			decayAmount := m.BaseDecayPerHour * waitHours
+
+			if m.Curve == "exponential" {
+				decayAmount *= 1.5 // Rough safety multiplier for exponential curves
+			}
+
+			if (currentVal - decayAmount) < safetyThreshold {
+				return false // The actor will burn out before the event is ready!
+			}
+		}
+	}
+	return true
+}
+
+// InterruptCurrentTask is called by the orchestrator when a PendingEvent becomes active, forcing the actor to drop micro-actions.
+func (ue *UtilityEngine) InterruptCurrentTask(actorID string, state *engine.SimulationState) bool {
+	activeActID, exists := ue.activeAction[actorID]
+	if !exists {
+		return true // Not busy, trivially ready to transition
+	}
+
+	// Ensure the current action allows for interruption
+	for _, act := range state.Blueprint.Actions {
+		if act.ActionID == activeActID {
+			if !act.Interruptible {
+				return false // Stuck in an uninterruptible task
+			}
+			break
+		}
+	}
+
+	// Drop the current task
+	delete(ue.activeAction, actorID)
+	delete(ue.activeTasks, actorID)
+
+	// Free the actor up in the ledger immediately
+	if actorLedger, ok := state.Actors[actorID]; ok {
+		actorLedger.StateEndsAt = state.SimTime
+	}
+	return true
+}
+
 func (ue *UtilityEngine) ResetMeters(actorID string, startingMeters map[string]float64) {
 	if _, exists := ue.meters[actorID]; !exists {
 		ue.meters[actorID] = make(map[string]float64)
@@ -109,7 +164,6 @@ func (ue *UtilityEngine) ResetMeters(actorID string, startingMeters map[string]f
 	}
 }
 
-// Updated to accept the new ContinuousEffect mapping for block_end applications
 func (ue *UtilityEngine) ApplyModifiersToMeters(actorID string, modifiers map[string]domain.ContinuousEffect, limits map[string]float64) {
 	if _, exists := ue.meters[actorID]; !exists {
 		return
@@ -195,7 +249,6 @@ func (ue *UtilityEngine) GetActionUrgency(actorID string, actionID string, state
 	return urgency
 }
 
-// Updated to accept the translated ActionFill maps directly from the Arbiter
 func (ue *UtilityEngine) ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
 	delete(ue.activeTasks, actorID)
 	delete(ue.activeAction, actorID)
@@ -325,7 +378,29 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 		var validActions []domain.ActionTemplate
 		actionScores := make(map[string]float64)
 
+		// SETUP: Intent Suppression
+		// If an actor is waiting for a commitment (e.g. Tea Round), they expect certain meters to be filled soon.
+		suppressedDeficits := make(map[string]float64)
+		hasCommitment := false
+
+		if actorLedger.CurrentCommitment != nil {
+			hasCommitment = true
+			for _, act := range state.Blueprint.Actions {
+				if act.ActionID == actorLedger.CurrentCommitment.ActionID {
+					for m, f := range act.Satisfies {
+						suppressedDeficits[m] = f.Amount
+					}
+					break
+				}
+			}
+		}
+
 		for _, template := range state.Blueprint.Actions {
+			// SAFETY CHECK: If waiting for a gathering, absolutely do NOT start an uninterruptible action
+			if hasCommitment && !template.Interruptible {
+				continue
+			}
+
 			available := true
 			for _, cond := range template.AvailableWhen {
 				if pass, _ := parsers.CheckCondition(cond, snapshot); !pass {
@@ -341,6 +416,16 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 			for meterID, fill := range template.Satisfies {
 				currentVal := ue.meters[actor.ActorID][meterID]
 				deficit := maxMeters[meterID] - currentVal
+
+				// INTENT SUPPRESSION: We are already committed to something that will satisfy this need.
+				if suppression, exists := suppressedDeficits[meterID]; exists {
+					deficit -= suppression
+				}
+
+				// If there's no deficit left after factoring in our pending commitments, ignore it.
+				if deficit <= 0 {
+					continue
+				}
 
 				fillAmount := fill.Amount
 				if fillAmount > deficit {

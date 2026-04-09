@@ -1,29 +1,38 @@
-# catalogs/actions/food/meals.yaml
 actions:
-  # --- BREAKFASTS ---
-  - id: "quick_cold_breakfast"
-    requires_device_tag: "refrigeration" # Grab milk/cereal or yogurt
+  - id: "cook_large_dinner"
+    requires_device_tag: "essential_cooking"
     template:
-      action_id: "quick_cold_breakfast"
-      interruptible: true
-      initiation_friction: 2.0
+      action_id: "cook_large_dinner"
+      interruptible: false
+      initiation_friction: 20.0 
+      sharing:
+        type: "scalable"
+        gathering_window: "15m"
+        duration_multiplier_per_actor: 0.1 # Cooking for 3 takes slightly longer than cooking for 1
+        max_participants: 6
       satisfies:
-        hunger: { amount: 35.0, curve: "front_loaded" }
-      duration: { type: 1, mean: "10m", std_dev: "2m" }
+        hunger: { amount: 70.0, curve: "linear" }
+        energy: { amount: 10.0, curve: "back_loaded" }
+      costs: { energy: 15.0 }
+      duration: { type: 1, mean: "45m", std_dev: "10m" }
       bonus_curves:
         - context_key: "time.hour_float"
-          peak: 7.5
+          peak: 19.0
           width: 2.0
-          magnitude: 50.0 # Massive pull in the morning
+          magnitude: 40.0
 
   - id: "cook_hot_breakfast"
-    requires_device_tag: "essential_cooking" # Frying pan, stove
+    requires_device_tag: "essential_cooking"
     template:
       action_id: "cook_hot_breakfast"
       interruptible: false
       initiation_friction: 10.0
-      costs:
-        energy: 5.0
+      sharing:
+        type: "scalable"
+        gathering_window: "10m"
+        duration_multiplier_per_actor: 0.2
+        max_participants: 4
+      costs: { energy: 5.0 }
       satisfies:
         hunger: { amount: 60.0, curve: "linear" }
       duration: { type: 1, mean: "25m", std_dev: "5m" }
@@ -33,9 +42,8 @@ actions:
           width: 2.0
           magnitude: 30.0
 
-  # --- LUNCHES ---
   - id: "make_cold_lunch"
-    requires_device_tag: "refrigeration" # Sandwiches, salads
+    requires_device_tag: "refrigeration"
     template:
       action_id: "make_cold_lunch"
       interruptible: true
@@ -49,57 +57,17 @@ actions:
           width: 2.0
           magnitude: 40.0
 
-  # --- DINNERS ---
-  - id: "cook_large_dinner"
+  - id: "make_hot_lunch"
     requires_device_tag: "essential_cooking"
     template:
-      action_id: "cook_large_dinner"
-      interruptible: false
-      initiation_friction: 20.0 
+      action_id: "make_hot_lunch"
+      interruptible: true
+      initiation_friction: 10.0
       satisfies:
-        hunger: { amount: 100.0, curve: "linear" }
-        energy: { amount: 10.0, curve: "back_loaded" }
-      costs: { energy: 15.0 }
-      duration: { type: 1, mean: "45m", std_dev: "10m" }
+        hunger: { amount: 60.0, curve: "linear" }
+      duration: { type: 1, mean: "15m", std_dev: "3m" }
       bonus_curves:
         - context_key: "time.hour_float"
-          peak: 19.0
+          peak: 13.0
           width: 2.0
           magnitude: 40.0
-
-  # --- SNACKS & DRINKS ---
-  - id: "microwave_meal"
-    requires_device_tag: "microwave"
-    template:
-      action_id: "microwave_meal"
-      interruptible: true
-      initiation_friction: 2.0 
-      satisfies:
-        hunger: { amount: 45.0, curve: "front_loaded" }
-      duration: { type: 1, mean: "5m", std_dev: "1m" }
-
-  - id: "make_toast_snack"
-    requires_device_tag: "essential_cooking" # Assuming toaster falls under basic kitchen here
-    template:
-      action_id: "make_toast_snack"
-      interruptible: true
-      initiation_friction: 1.0
-      satisfies:
-        hunger: { amount: 15.0, curve: "linear" }
-      duration: { type: 3, value: "3m" }
-
-  - id: "make_hot_drink"
-    requires_device_tag: "hot_beverage"
-    template:
-      action_id: "make_hot_drink"
-      interruptible: true
-      initiation_friction: 1.0
-      satisfies:
-        energy: { amount: 15.0, curve: "linear" }
-        hunger: { amount: 5.0, curve: "linear" }
-      duration: { type: 3, value: "4m" }
-      bonus_curves:
-        - context_key: "time.hour_float"
-          peak: 7.5
-          width: 1.5
-          magnitude: 25.0

@@ -229,7 +229,7 @@ func TestCalculatePhaseTimes_Sleep(t *testing.T) {
 		},
 	}
 
-	start, end := se.CalculatePhaseTimes(actor, phase, state, "workday")
+	start, end, _, _ := se.CalculatePhaseTimes(actor, phase, state, "workday")
 
 	// Urgency is 0.5 (neutral from MockUtility), so factor is 0, shifts should be 0
 	expectedStart := time.Date(2026, 1, 1, 23, 0, 0, 0, time.UTC)

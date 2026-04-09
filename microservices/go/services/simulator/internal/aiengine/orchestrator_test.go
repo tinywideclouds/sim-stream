@@ -6,51 +6,113 @@ import (
 
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
 	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
+	"github.com/tinywideclouds/go-sim-probability/pkg/parsers"
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
-// MockGrid for deterministic physics testing
+type MockAIEngine struct {
+	ActiveActors      []string
+	InterruptedActors []string
+	UrgencyScore      float64
+}
+
+func (m *MockAIEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
+	return m.ActiveActors, []string{}, []string{}
+}
+
+func (m *MockAIEngine) InterruptCurrentTask(actorID string, state *engine.SimulationState) bool {
+	m.InterruptedActors = append(m.InterruptedActors, actorID)
+	return true
+}
+
+func (m *MockAIEngine) GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64 {
+	return m.UrgencyScore
+}
+
+func (m *MockAIEngine) ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
+}
+
+type MockWeather struct{}
+
+func (m MockWeather) GetTemperature(t time.Time) float64     { return 15.0 }
+func (m MockWeather) GetPrecipitation(t time.Time) float64   { return 0.0 }
+func (m MockWeather) GetSolarIrradiance(t time.Time) float64 { return 0.0 }
+
 type MockGrid struct{}
 
-func (m *MockGrid) NominalVoltage() float64         { return 230.0 }
-func (m *MockGrid) LiveVoltage(t time.Time) float64 { return 230.0 }
+func (m MockGrid) NominalVoltage() float64               { return 230.0 }
+func (m MockGrid) LiveVoltage(t time.Time) float64       { return 230.0 }
+func (m MockGrid) RecordDraw(watts float64, t time.Time) {}
 
-func TestOrchestratorPipeline(t *testing.T) {
-	// 1. Setup minimal state
-	blueprint := &domain.NodeArchetype{
-		WaterSystem: &domain.WaterSystemTemplate{
-			TankCapacityLiters:         150.0,
-			MaxTankTempCelsius:         60.0,
-			StandbyTemperatureLossTick: 0.0, // Disable standby loss for easier math
+func TestOrchestrator_GatheringWindow(t *testing.T) {
+	sampler := generator.NewSampler([32]byte{})
+	ai := &MockAIEngine{
+		ActiveActors: []string{"actor_1:make_tea"},
+		UrgencyScore: 0.5,
+	}
+	orch := NewOrchestrator(ai, sampler)
+
+	state := &engine.SimulationState{
+		SimTime: time.Date(2026, 1, 1, 8, 0, 0, 0, time.UTC),
+		Actors: map[string]*engine.ActorLedger{
+			"actor_1": {},
+			"actor_2": {},
 		},
-		Devices: []domain.DeviceTemplate{},
-		Actors:  []domain.Actor{},
+		House: engine.HouseholdLedger{
+			PendingEvents: make(map[string]*engine.PendingEvent),
+			ResourceLocks: make(map[string]string),
+		},
+		Blueprint: &domain.NodeArchetype{
+			Actors: []domain.Actor{
+				{ActorID: "actor_1", Type: "adult", AIModel: "utility"},
+				{ActorID: "actor_2", Type: "adult", AIModel: "utility"},
+			},
+			Actions: []domain.ActionTemplate{
+				{
+					ActionID: "make_tea",
+					Sharing: &domain.SharingProfile{
+						Type:            domain.SharingScalable,
+						GatheringWindow: "5m",
+						MaxParticipants: 4,
+					},
+					Duration: domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "3m"},
+				},
+			},
+		},
 	}
-	state := engine.NewSimulationState(blueprint, time.Now())
 
-	// 2. Setup the V2 Routine Engine
-	var seed [32]byte
-	sampler := generator.NewSampler(seed)
-	scheduler := engine.NewScheduler(sampler)
-	negotiator := engine.NewNegotiator()
-	executor := engine.NewExecutor(sampler)
+	// Tick 1: Initiator triggers the intent
+	orch.Tick(state, time.Minute, MockWeather{}, MockGrid{})
 
-	routineEngine := NewRoutineEngine(scheduler, negotiator, executor, 4)
-
-	// 3. Setup the Orchestrator Pipeline
-	orchestrator := NewOrchestrator(routineEngine, sampler)
-
-	// 4. Run one Tick
-	tickDuration := 15 * time.Second
-	grid := &MockGrid{}
-
-	result := orchestrator.Tick(state, tickDuration, nil, grid)
-
-	// 5. Verify the pipeline returned a valid, assembled result
-	if result.GridVoltage != 230.0 {
-		t.Errorf("Expected GridVoltage 230.0, got %.2f", result.GridVoltage)
+	if len(state.House.PendingEvents) != 1 {
+		t.Fatalf("Expected 1 pending event, got %d", len(state.House.PendingEvents))
 	}
-	if result.TotalWatts != 0.0 {
-		t.Errorf("Expected 0.0 Watts, got %.2f", result.TotalWatts)
+
+	var ev *engine.PendingEvent
+	for _, v := range state.House.PendingEvents {
+		ev = v
+	}
+
+	if ev.IsExecuting {
+		t.Fatal("Event should be gathering, not executing")
+	}
+
+	if len(ev.Participants) != 2 {
+		t.Fatalf("Expected actor_2 to automatically join, got %d participants", len(ev.Participants))
+	}
+
+	if state.Actors["actor_2"].CurrentCommitment == nil {
+		t.Fatal("actor_2 should have a locked CurrentCommitment while waiting")
+	}
+
+	// Advance time to close window
+	orch.Tick(state, 5*time.Minute, MockWeather{}, MockGrid{})
+
+	if !ev.IsExecuting {
+		t.Fatal("Event should be executing after gathering window closed")
+	}
+
+	if len(ai.InterruptedActors) != 2 {
+		t.Fatalf("Both actors should have received System Interrupts to drop their wait tasks, got %d", len(ai.InterruptedActors))
 	}
 }

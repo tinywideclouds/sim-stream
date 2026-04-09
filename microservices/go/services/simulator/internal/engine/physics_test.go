@@ -40,8 +40,9 @@ func TestProcessPhysics_JouleHeating(t *testing.T) {
 
 	tickDuration := 15 * time.Second
 	grid := &MockGrid{}
+	participantCounts := make(map[string]int)
 
-	_ = ProcessPhysics(state, tickDuration, grid)
+	_ = ProcessPhysics(state, tickDuration, grid, participantCounts)
 
 	// MATH: 45000 Joules / (150L * 4184) = 0.0717 C
 	expectedTemp := 50.0 + (45000.0 / (150.0 * 4184.0)) - 0.002
@@ -79,8 +80,9 @@ func TestProcessPhysics_ColdWaterMixing(t *testing.T) {
 
 	tickDuration := 15 * time.Second
 	grid := &MockGrid{}
+	participantCounts := make(map[string]int)
 
-	result := ProcessPhysics(state, tickDuration, grid)
+	result := ProcessPhysics(state, tickDuration, grid, participantCounts)
 
 	if result.HotLiters != 3.0 {
 		t.Errorf("Expected 3.0 Hot Liters drawn, got %.2f", result.HotLiters)

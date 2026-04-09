@@ -17,7 +17,8 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 90.0, over: "10h", curve: "front_loaded" }
-            hunger: { amount: -50.0, over: "10h", curve: "linear" }
+            # hunger does not increase over time - this offsets the base decay instead
+            hunger: { amount: 40.0, over: "10h", curve: "linear" }
             hygiene: { amount: -50.0, over: "10h", curve: "linear" }
             leisure: { amount: 10.0, over: "10h", curve: "linear" }
       - phase_id: "school_day"
@@ -88,7 +89,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -20.0, over: "8h", curve: "linear" }
+            hunger: { amount: 30.0, over: "8h", curve: "linear" }
             hygiene: { amount: -30.0, over: "8h", curve: "linear" }
             leisure: { amount: +20.0, over: "8h", curve: "linear" }
       - phase_id: "school_day"
@@ -137,7 +138,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 30.0, over: "2h", curve: "linear" }
-            hunger: { amount: -10.0, over: "2h", curve: "linear" }
+            hunger: { amount: 8.0, over: "2h", curve: "linear" }
             hygiene: { amount: -10.0, over: "2h", curve: "linear" }
             leisure: { amount: 2.0, over: "2h", curve: "linear" }
       - phase_id: "daycare"
@@ -174,7 +175,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 65.0, over: "6h30m", curve: "front_loaded" }
-            hunger: { amount: -40.0, over: "6h30m", curve: "linear" }
+            hunger: { amount: 30.0, over: "6h30m", curve: "linear" }
             hygiene: { amount: -40.0, over: "6h30m", curve: "linear" }
             leisure: { amount: 10.0, over: "6h30m", curve: "linear" }
       - phase_id: "school_day"
@@ -190,7 +191,7 @@ personas:
           application: "block_end"
           effects:
             energy: { amount: -60.0, over: "7h", curve: "linear" }
-            hunger: { amount: -60.0, over: "7h", curve: "linear" }
+            hunger: { amount: -40.0, over: "7h", curve: "linear" }
             hygiene: { amount: -20.0, over: "7h", curve: "linear" }
             leisure: { amount: -20.0, over: "7h", curve: "linear" }
 
@@ -211,7 +212,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 85.0, over: "9h", curve: "front_loaded" }
-            hunger: { amount: -20.0, over: "9h", curve: "linear" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: 20.0, over: "9h", curve: "linear" }
       - phase_id: "school_day"
@@ -248,7 +249,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "9h", curve: "front_loaded" }
-            hunger: { amount: -20.0, over: "9h", curve: "linear" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "school_extended"
@@ -285,6 +286,9 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 90.0, over: "10h", curve: "front_loaded" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
 
   - id: "child_tv_addict"
     type: "child"
@@ -303,7 +307,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -20.0, over: "8h", curve: "linear" }
+            hunger: { amount: 30.0, over: "8h", curve: "linear" }
             hygiene: { amount: -30.0, over: "8h", curve: "linear" }
             leisure: { amount: +20.0, over: "8h", curve: "linear" }
       - phase_id: "school_day"
@@ -340,7 +344,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "9h", curve: "front_loaded" }
-            hunger: { amount: -20.0, over: "9h", curve: "linear" }
+            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "school_day"

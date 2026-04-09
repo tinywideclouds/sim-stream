@@ -17,7 +17,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
-            hunger: { amount: -30.0, over: "7h", curve: "linear" }
+            hunger: { amount: 30.0, over: "7h", curve: "linear" }
             hygiene: { amount: -15.0, over: "7h", curve: "linear" }
             leisure: { amount: 5.0, over: "7h", curve: "linear" }
       - phase_id: "university"
@@ -54,7 +54,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "late_lectures"
@@ -91,7 +91,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "7h30m", curve: "front_loaded" }
-            hunger: { amount: -30.0, over: "7h30m", curve: "linear" }
+            hunger: { amount: 30.0, over: "7h30m", curve: "linear" }
             hygiene: { amount: -15.0, over: "7h30m", curve: "linear" }
             leisure: { amount: 5.0, over: "7h30m", curve: "linear" }
 
@@ -112,7 +112,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
-            hunger: { amount: -30.0, over: "7h", curve: "linear" }
+            hunger: { amount: 30.0, over: "7h", curve: "linear" }
             hygiene: { amount: -15.0, over: "7h", curve: "linear" }
             leisure: { amount: 5.0, over: "7h", curve: "linear" }
       - phase_id: "erratic_campus_day"
@@ -149,7 +149,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
-            hunger: { amount: -25.0, over: "6h", curve: "linear" }
+            hunger: { amount: 25.0, over: "6h", curve: "linear" }
             hygiene: { amount: -10.0, over: "6h", curve: "linear" }
             leisure: { amount: 5.0, over: "6h", curve: "linear" }
       - phase_id: "minimal_lectures"
@@ -186,7 +186,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 85.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "work_and_study"
@@ -223,7 +223,7 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hunger: { amount: 30.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "campus_and_pub"
@@ -260,6 +260,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 45.0, over: "4h", curve: "front_loaded" }
-            hunger: { amount: -15.0, over: "4h", curve: "linear" }
+            hunger: { amount: 15.0, over: "4h", curve: "linear" }
             hygiene: { amount: -5.0, over: "4h", curve: "linear" }
             leisure: { amount: 2.0, over: "4h", curve: "linear" }

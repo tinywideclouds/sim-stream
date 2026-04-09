@@ -7,6 +7,7 @@ import (
 
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
 	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
+	"github.com/tinywideclouds/go-sim-probability/pkg/parsers"
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
@@ -224,5 +225,116 @@ func TestUtilityEngine_ForceTask(t *testing.T) {
 	// 50.0 start + (~0.104 fill) - (0.1 decay) = ~50.004
 	if energy.(float64) <= 50.0 {
 		t.Errorf("Expected energy to start recovering during forced task, got %f", energy.(float64))
+	}
+}
+
+func TestUtilityEngine_IntentSuppression(t *testing.T) {
+	sampler := generator.NewSampler([32]byte{})
+	ue := NewUtilityEngine(sampler)
+
+	blueprint := &domain.NodeArchetype{
+		Meters: []domain.MeterTemplate{
+			{MeterID: "hunger", Max: 100},
+			{MeterID: "leisure", Max: 100},
+		},
+		Actors: []domain.Actor{
+			{ActorID: "actor_1", AIModel: "utility"},
+		},
+		Actions: []domain.ActionTemplate{
+			{
+				ActionID: "eat_snack", // High utility, solves hunger
+				Satisfies: map[string]domain.ActionFill{
+					"hunger": {Amount: 50, Curve: "linear"},
+				},
+			},
+			{
+				ActionID: "read_book", // Low utility, solves leisure
+				Satisfies: map[string]domain.ActionFill{
+					"leisure": {Amount: 20, Curve: "linear"},
+				},
+			},
+			{
+				ActionID: "family_dinner",
+				Satisfies: map[string]domain.ActionFill{
+					"hunger": {Amount: 80, Curve: "linear"},
+				},
+			},
+		},
+	}
+
+	state := &engine.SimulationState{
+		SimTime:   time.Now(),
+		Blueprint: blueprint,
+		Actors: map[string]*engine.ActorLedger{
+			"actor_1": {
+				CurrentState: domain.ActorStateHomeFree,
+			},
+		},
+	}
+
+	// Actor is starving and bored
+	ue.ResetMeters("actor_1", map[string]float64{"hunger": 10, "leisure": 80})
+
+	snapshot := make(parsers.StateSnapshot)
+
+	// Run normally without commitments
+	ue.Process(state, snapshot, time.Minute)
+
+	if ue.activeAction["actor_1"] != "eat_snack" {
+		t.Fatalf("Expected actor to choose eat_snack, chose %s", ue.activeAction["actor_1"])
+	}
+
+	// Clear action and set up an Intent Lock using engine.Commitment
+	delete(ue.activeAction, "actor_1")
+	state.Actors["actor_1"].CurrentCommitment = &engine.Commitment{
+		ActionID:  "family_dinner",
+		Role:      "participant",
+		ExpiresAt: state.SimTime.Add(2 * time.Hour),
+	}
+
+	// Run again. The actor should ignore 'eat_snack' and fall back to 'read_book'
+	ue.Process(state, snapshot, time.Minute)
+
+	if ue.activeAction["actor_1"] != "read_book" {
+		t.Fatalf("Intent suppression failed! Actor chose %s instead of falling back to read_book", ue.activeAction["actor_1"])
+	}
+}
+
+func TestUtilityEngine_InterruptCurrentTask(t *testing.T) {
+	sampler := generator.NewSampler([32]byte{})
+	ue := NewUtilityEngine(sampler)
+
+	state := &engine.SimulationState{
+		SimTime: time.Now(),
+		Blueprint: &domain.NodeArchetype{
+			Actions: []domain.ActionTemplate{
+				{ActionID: "interruptible_task", Interruptible: true},
+				{ActionID: "locked_task", Interruptible: false},
+			},
+		},
+		Actors: map[string]*engine.ActorLedger{
+			"actor_1": {StateEndsAt: time.Now().Add(time.Hour)},
+		},
+	}
+
+	// Test 1: Interrupting an interruptible task
+	ue.activeAction["actor_1"] = "interruptible_task"
+	ue.activeTasks["actor_1"] = &ActiveTask{}
+
+	success := ue.InterruptCurrentTask("actor_1", state)
+	if !success {
+		t.Fatal("Expected true when interrupting an interruptible task")
+	}
+	if _, ok := ue.activeAction["actor_1"]; ok {
+		t.Fatal("Task was not cleared from ActiveAction")
+	}
+
+	// Test 2: Failing to interrupt a locked task
+	ue.activeAction["actor_1"] = "locked_task"
+	ue.activeTasks["actor_1"] = &ActiveTask{}
+
+	success = ue.InterruptCurrentTask("actor_1", state)
+	if success {
+		t.Fatal("Expected false when attempting to interrupt a locked task")
 	}
 }

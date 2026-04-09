@@ -20,7 +20,8 @@ type PhysicsResult struct {
 }
 
 // ProcessPhysics calculates the hardware states, power draw, and tank thermodynamics.
-func ProcessPhysics(state *SimulationState, tickDuration time.Duration, grid GridProvider) PhysicsResult {
+// participantCounts provides the active number of occupants using each device, allowing for future dynamic load scaling.
+func ProcessPhysics(state *SimulationState, tickDuration time.Duration, grid GridProvider, participantCounts map[string]int) PhysicsResult {
 	var totalWatts float64
 	var spaceHeaterWatts float64
 	var waterHeaterWatts float64
