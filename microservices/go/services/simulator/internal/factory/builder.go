@@ -3,6 +3,7 @@ package factory
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
 	"github.com/tinywideclouds/go-sim-schema/domain"
@@ -143,7 +144,7 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 			}
 		}
 
-		actor := domain.ActorTemplate{
+		actor := domain.Actor{
 			ActorID:            fmt.Sprintf("%s_%d", cp.ID, i+1),
 			Type:               cp.Type,
 			AIModel:            "stable",
@@ -213,7 +214,8 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 	for _, eid := range req.EventIDs {
 		cEvent, exists := g.registry.CollectiveEvents[eid]
 		if !exists {
-			return nil, fmt.Errorf("collective event %s requested but not found in registry", eid)
+			slog.Warn("Requested event not found in registry", slog.String("event_id", eid))
+			continue
 		}
 
 		rollDist := domain.ProbabilityDistribution{
@@ -225,6 +227,13 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 		if err != nil {
 			return nil, fmt.Errorf("failed to sample distribution for event %s: %v", eid, err)
 		}
+
+		slog.Debug("Event RNG Evaluation",
+			slog.String("event_id", eid),
+			slog.Float64("roll", roll),
+			slog.Float64("weight_required", cEvent.Selection.Weight),
+			slog.Bool("passed", roll <= cEvent.Selection.Weight),
+		)
 
 		if roll > cEvent.Selection.Weight {
 			continue
@@ -246,7 +255,17 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 			}
 		}
 
+		slog.Debug("Event Actor Assignment",
+			slog.String("event_id", eid),
+			slog.String("required_type", cEvent.Template.LeadRequirement),
+			slog.String("assigned_lead_id", leadActorID),
+		)
+
 		if leadActorID == "" {
+			slog.Warn("Event skipped: No matching lead actor found in household",
+				slog.String("event_id", eid),
+				slog.String("required_type", cEvent.Template.LeadRequirement),
+			)
 			continue
 		}
 		instantiatedEvent.LeadActor = leadActorID
@@ -265,6 +284,7 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 		}
 
 		node.CollectiveEvents = append(node.CollectiveEvents, instantiatedEvent)
+		slog.Info("Successfully attached collective event", slog.String("event_id", eid), slog.String("archetype", req.ArchetypeID))
 	}
 
 	return node, nil

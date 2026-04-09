@@ -1,0 +1,464 @@
+archetype_id: retired_household_006
+description: Procedurally generated household
+base_temp_c: 18
+insulation_decay_rate: 0.1
+grid:
+    nominal_voltage: 230
+    wave_center: 230
+    wave_amplitude: 5
+    peak_hour: 18
+    jitter_min: -1.5
+    jitter_max: 1.5
+water_system:
+    tank_capacity_liters: 300
+    mains_water_temp_celsius: 10
+    max_tank_temp_celsius: 60
+    standby_temperature_loss_tick: 0.002
+devices:
+    - device_id: freestanding_gas_range_1
+      taxonomy:
+        category: 1
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 40
+        standby_watts: 3
+        cooldown_duration: ""
+      water_profile: null
+    - device_id: kettle_fast_boil_2
+      taxonomy:
+        category: 1
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 3000
+        standby_watts: 0
+        cooldown_duration: ""
+      water_profile: null
+    - device_id: fridge_freezer_american_3
+      taxonomy:
+        category: 3
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 300
+        standby_watts: 25
+        cooldown_duration: ""
+      water_profile: null
+    - device_id: electric_flow_boiler_4
+      taxonomy:
+        category: 2
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 12000
+        standby_watts: 2
+        cooldown_duration: ""
+      water_profile: null
+    - device_id: immersion_heater_standard_5
+      taxonomy:
+        category: 6
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 3000
+        standby_watts: 0
+        cooldown_duration: ""
+      water_profile: null
+    - device_id: standard_bathtub_6
+      taxonomy:
+        category: 5
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 0
+        standby_watts: 0
+        cooldown_duration: ""
+      water_profile:
+        cold_lpm: 5
+        hot_lpm: 15
+    - device_id: budget_led_tv_7
+      taxonomy:
+        category: 4
+        class_name: ""
+      specifics: {}
+      electrical_profile:
+        type: 1
+        max_watts: 55
+        standby_watts: 1
+        cooldown_duration: ""
+      water_profile: null
+scenarios:
+    - scenario_id: thermostat_heat
+      actor_tags:
+        - system
+      trigger:
+        type: 2
+        base_conditions:
+            - context_key: indoor_temp_c
+              operator: 0
+              value: "18.0"
+        fatigue_rule:
+            lockout_duration: 30m
+      actions:
+        - device_id: electric_flow_boiler_4
+          state: 1
+          parameters:
+            duration:
+                type: 3
+                value: 20m
+    - scenario_id: tank_thermostat
+      actor_tags:
+        - system
+      trigger:
+        type: 2
+        base_conditions:
+            - context_key: tank_temp_c
+              operator: 0
+              value: "45.0"
+        fatigue_rule:
+            lockout_duration: 60m
+      actions:
+        - device_id: immersion_heater_standard_5
+          state: 1
+          parameters:
+            duration:
+                type: 3
+                value: 45m
+    - scenario_id: fridge_compressor_cycle
+      actor_tags:
+        - system
+      trigger:
+        type: 2
+        base_conditions: []
+        fatigue_rule:
+            lockout_duration: 45m
+      actions:
+        - device_id: fridge_freezer_american_3
+          state: 1
+          parameters:
+            duration:
+                type: 3
+                value: 15m
+actors:
+    - actor_id: retired_erratic_1
+      type: elderly
+      ai_model: stable
+      routines: []
+      starting_meters:
+        energy: 65
+        hunger: 50
+        hygiene: 60
+        leisure: 70
+      softmax_temperature: 2
+      phases:
+        - phase_id: night_sleep
+          type: sleep
+          anchor_time: "23:00"
+          gravity: 0.1
+          duration:
+            type: 3
+            value: 8h
+            flexibility: 3h0m0s
+          modifiers:
+            application: continuous
+            effects:
+                energy:
+                    amount: 80
+                    over: 8h0m0s
+                    curve: front_loaded
+                hunger:
+                    amount: -35
+                    over: 8h0m0s
+                    curve: linear
+                hygiene:
+                    amount: -15
+                    over: 8h0m0s
+                    curve: linear
+                leisure:
+                    amount: 5
+                    over: 8h0m0s
+                    curve: linear
+        - phase_id: afternoon_visiting
+          type: away
+          anchor_time: "14:00"
+          gravity: 0.6
+          duration:
+            type: 1
+            mean: 3h
+            std_dev: 60m
+            flexibility: 1h30m0s
+          modifiers:
+            application: block_end
+            effects:
+                energy:
+                    amount: -25
+                    over: 3h0m0s
+                    curve: linear
+                hunger:
+                    amount: 10
+                    over: 3h0m0s
+                    curve: linear
+                hygiene:
+                    amount: -10
+                    over: 3h0m0s
+                    curve: linear
+                leisure:
+                    amount: 40
+                    over: 3h0m0s
+                    curve: linear
+routine_templates: []
+collective_events:
+    - event_id: shared_movie_night
+      action: watch_tv
+      base_fragility: 0.1
+      abort_conditions: []
+      lead_actor: retired_erratic_1
+      dependent_actors: []
+meters:
+    - meter_id: energy
+      max: 100
+      base_decay_per_hour: 4
+      curve: linear
+    - meter_id: hunger
+      max: 100
+      base_decay_per_hour: 6
+      curve: linear
+    - meter_id: hygiene
+      max: 100
+      base_decay_per_hour: 2
+      curve: linear
+    - meter_id: leisure
+      max: 100
+      base_decay_per_hour: 5
+      curve: linear
+actions:
+    - action_id: quick_cold_breakfast
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: fridge_freezer_american_3
+      satisfies:
+        hunger:
+            amount: 35
+            curve: front_loaded
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 7.5
+          width: 2
+          magnitude: 50
+      interruptible: true
+      initiation_friction: 2
+      duration:
+        type: 1
+        mean: 10m
+        std_dev: 2m
+    - action_id: cook_hot_breakfast
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: freestanding_gas_range_1
+      satisfies:
+        hunger:
+            amount: 60
+            curve: linear
+      costs:
+        energy: 5
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 8
+          width: 2
+          magnitude: 30
+      interruptible: false
+      initiation_friction: 10
+      duration:
+        type: 1
+        mean: 25m
+        std_dev: 5m
+    - action_id: long_bath
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: standard_bathtub_6
+      satisfies:
+        hygiene:
+            amount: 100
+            curve: linear
+        leisure:
+            amount: 30
+            curve: linear
+      interruptible: true
+      initiation_friction: 10
+      duration:
+        type: 1
+        mean: 35m
+        std_dev: 10m
+    - action_id: make_cold_lunch
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: fridge_freezer_american_3
+      satisfies:
+        hunger:
+            amount: 50
+            curve: linear
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 13
+          width: 2
+          magnitude: 40
+      interruptible: true
+      initiation_friction: 5
+      duration:
+        type: 1
+        mean: 15m
+        std_dev: 3m
+    - action_id: make_toast_snack
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: freestanding_gas_range_1
+      satisfies:
+        hunger:
+            amount: 15
+            curve: linear
+      interruptible: true
+      initiation_friction: 1
+      duration:
+        type: 3
+        value: 3m
+    - action_id: make_hot_drink
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: kettle_fast_boil_2
+      satisfies:
+        energy:
+            amount: 15
+            curve: linear
+        hunger:
+            amount: 5
+            curve: linear
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 7.5
+          width: 1.5
+          magnitude: 25
+      interruptible: true
+      initiation_friction: 1
+      duration:
+        type: 3
+        value: 4m
+    - action_id: watch_tv
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: budget_led_tv_7
+      satisfies:
+        leisure:
+            amount: 40
+            curve: linear
+      interruptible: true
+      duration:
+        type: 1
+        mean: 1h30m
+        std_dev: 30m
+    - action_id: gardening
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      satisfies:
+        leisure:
+            amount: 60
+            curve: front_loaded
+      costs:
+        energy: 30
+        hygiene: 20
+      available_when:
+        - context_key: time.hour
+          operator: 0
+          value: "7.0"
+        - context_key: time.hour
+          operator: 0
+          value: "19.0"
+      interruptible: true
+      initiation_friction: 20
+      duration:
+        type: 1
+        mean: 2h
+        std_dev: 30m
+    - action_id: cook_large_dinner
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      device_id: freestanding_gas_range_1
+      satisfies:
+        energy:
+            amount: 10
+            curve: back_loaded
+        hunger:
+            amount: 100
+            curve: linear
+      costs:
+        energy: 15
+      bonus_curves:
+        - context_key: time.hour_float
+          peak: 19
+          width: 2
+          magnitude: 40
+      interruptible: false
+      initiation_friction: 20
+      duration:
+        type: 1
+        mean: 45m
+        std_dev: 10m
+    - action_id: read_book
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      satisfies:
+        leisure:
+            amount: 35
+            curve: linear
+      costs:
+        energy: 5
+      interruptible: true
+      initiation_friction: 5
+      duration:
+        type: 1
+        mean: 1h
+        std_dev: 15m
+    - action_id: play_board_game
+      actor_tags:
+        - adult
+        - child
+        - elderly
+      satisfies:
+        leisure:
+            amount: 50
+            curve: ease_out
+      costs:
+        energy: 10
+      interruptible: true
+      initiation_friction: 15
+      duration:
+        type: 1
+        mean: 1h30m
+        std_dev: 20m
+alarms: []

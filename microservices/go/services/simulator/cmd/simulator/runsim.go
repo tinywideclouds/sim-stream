@@ -26,7 +26,7 @@ import (
 func main() {
 	inDir := flag.String("dir", "setup/bulk", "Directory containing household YAMLs")
 	outDir := flag.String("outdir", "results/test_batch", "Directory to output logs")
-	simDays := flag.Float64("days", 7.0, "Days to simulate after burn-in")
+	simDays := flag.Float64("days", 14.0, "Days to simulate after burn-in")
 	burnInHours := flag.Float64("burn-in", 24.0, "Hours to simulate invisibly to settle initial conditions")
 	sampleSize := flag.Int("sample", 1, "Number of random households to sample (0 = run all)")
 	logLevel := flag.String("loglevel", "info", "Log level: debug, info, warn, error")
@@ -133,10 +133,10 @@ func runHouseholdSimulation(yamlPath, outDir string, days, burnInHours float64, 
 	sampler := generator.NewSampler(seed)
 
 	// --- THE FIX: WIRED HYBRID ENGINE ---
-	// 1. Setup V3 Brain
+	// 1. Setup emergent behaviour Brain
 	utilityBrain := aiengine.NewUtilityEngine(sampler)
 
-	// 2. Setup V2 Brain
+	// 2. Setup routine Brain
 	scheduler := engine.NewScheduler(sampler)
 	negotiator := engine.NewNegotiator()
 	executor := engine.NewExecutor(sampler)

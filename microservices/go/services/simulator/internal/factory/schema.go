@@ -21,11 +21,11 @@ type CatalogAction struct {
 
 // CatalogPersona represents a demographic archetype with starting biological modifiers.
 type CatalogPersona struct {
-	ID             string              `yaml:"id"`
-	Type           string              `yaml:"type"`
-	Traits         []string            `yaml:"traits"`
-	StartingMeters map[string]float64  `yaml:"starting_meters"`
-	Phases         []domain.DailyPhase `yaml:"phases"`
+	ID             string             `yaml:"id"`
+	Type           string             `yaml:"type"`
+	Traits         []string           `yaml:"traits"`
+	StartingMeters map[string]float64 `yaml:"starting_meters"`
+	Phases         []domain.Phase     `yaml:"phases"`
 }
 
 // CatalogSystem represents ambient or fixed household systems (like thermostats).

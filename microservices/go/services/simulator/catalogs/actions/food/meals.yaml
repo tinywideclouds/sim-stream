@@ -1,81 +1,104 @@
 # catalogs/actions/food/meals.yaml
 actions:
-  # 1. The Heavy Meal
+  # --- BREAKFASTS ---
+  - id: "quick_cold_breakfast"
+    requires_device_tag: "refrigeration" # Grab milk/cereal or yogurt
+    template:
+      action_id: "quick_cold_breakfast"
+      interruptible: true
+      initiation_friction: 2.0
+      satisfies:
+        hunger: { amount: 35.0, curve: "front_loaded" }
+      duration: { type: 1, mean: "10m", std_dev: "2m" }
+      bonus_curves:
+        - context_key: "time.hour_float"
+          peak: 7.5
+          width: 2.0
+          magnitude: 50.0 # Massive pull in the morning
+
+  - id: "cook_hot_breakfast"
+    requires_device_tag: "essential_cooking" # Frying pan, stove
+    template:
+      action_id: "cook_hot_breakfast"
+      interruptible: false
+      initiation_friction: 10.0
+      costs:
+        energy: 5.0
+      satisfies:
+        hunger: { amount: 60.0, curve: "linear" }
+      duration: { type: 1, mean: "25m", std_dev: "5m" }
+      bonus_curves:
+        - context_key: "time.hour_float"
+          peak: 8.0
+          width: 2.0
+          magnitude: 30.0
+
+  # --- LUNCHES ---
+  - id: "make_cold_lunch"
+    requires_device_tag: "refrigeration" # Sandwiches, salads
+    template:
+      action_id: "make_cold_lunch"
+      interruptible: true
+      initiation_friction: 5.0
+      satisfies:
+        hunger: { amount: 50.0, curve: "linear" }
+      duration: { type: 1, mean: "15m", std_dev: "3m" }
+      bonus_curves:
+        - context_key: "time.hour_float"
+          peak: 13.0
+          width: 2.0
+          magnitude: 40.0
+
+  # --- DINNERS ---
   - id: "cook_large_dinner"
-    requires_device_tag: "cooking_high_load" # Maps to electric ovens, gas ranges, etc.
+    requires_device_tag: "essential_cooking"
     template:
       action_id: "cook_large_dinner"
       interruptible: false
-      initiation_friction: 20.0 # Takes effort to start cooking after a long day
+      initiation_friction: 20.0 
       satisfies:
-        hunger:
-          amount: 100.0
-          curve: "linear"
-        energy:
-          amount: 10.0 # A good meal gives a little energy back
-          curve: "back_loaded"
-      costs:
-        energy: 15.0 # But the act of cooking costs energy upfront
-      duration: 
-        type: 1 # Normal Distribution
-        mean: "45m"
-        std_dev: "10m"
+        hunger: { amount: 100.0, curve: "linear" }
+        energy: { amount: 10.0, curve: "back_loaded" }
+      costs: { energy: 15.0 }
+      duration: { type: 1, mean: "45m", std_dev: "10m" }
       bonus_curves:
-        # Cultural pull to eat dinner around 19:00 (7:00 PM)
         - context_key: "time.hour_float"
           peak: 19.0
           width: 2.0
           magnitude: 40.0
 
-  # 2. The Quick Fix
+  # --- SNACKS & DRINKS ---
   - id: "microwave_meal"
-    requires_device_tag: "microwave" # Maps to budget or high-power microwaves
+    requires_device_tag: "microwave"
     template:
       action_id: "microwave_meal"
       interruptible: true
-      initiation_friction: 2.0 # Very easy to choose when tired
+      initiation_friction: 2.0 
       satisfies:
-        hunger:
-          amount: 45.0
-          curve: "front_loaded"
-      duration: 
-        type: 1
-        mean: "5m"
-        std_dev: "1m"
+        hunger: { amount: 45.0, curve: "front_loaded" }
+      duration: { type: 1, mean: "5m", std_dev: "1m" }
 
-  # 3. The Snack
   - id: "make_toast_snack"
-    requires_device_tag: "toaster"
+    requires_device_tag: "essential_cooking" # Assuming toaster falls under basic kitchen here
     template:
       action_id: "make_toast_snack"
       interruptible: true
       initiation_friction: 1.0
       satisfies:
-        hunger:
-          amount: 15.0
-          curve: "linear"
-      duration: 
-        type: 3 # Constant
-        value: "3m"
+        hunger: { amount: 15.0, curve: "linear" }
+      duration: { type: 3, value: "3m" }
 
-  # 4. The Caffeine Hit
   - id: "make_hot_drink"
-    requires_device_tag: "hot_beverage" # Maps to kettles or espresso machines
+    requires_device_tag: "hot_beverage"
     template:
       action_id: "make_hot_drink"
       interruptible: true
       initiation_friction: 1.0
       satisfies:
-        energy:
-          amount: 15.0 # The caffeine bump!
-          curve: "linear"
-        hunger:
-          amount: 5.0
-      duration: 
-        type: 3
-        value: "4m"
+        energy: { amount: 15.0, curve: "linear" }
+        hunger: { amount: 5.0, curve: "linear" }
+      duration: { type: 3, value: "4m" }
       bonus_curves:
-        # Strong pull to make coffee/tea in the morning
         - context_key: "time.hour_float"
           peak: 7.5
           width: 1.5

@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -20,24 +20,36 @@ func main() {
 	totalRuns := flag.Int("count", 100, "Number of households to generate")
 	flag.Parse()
 
-	log.Printf("--- Starting Bulk Household Profiler ---")
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
+	slog.SetDefault(logger)
+
+	slog.Info("--- Starting Bulk Household Profiler ---")
 
 	// 1. Load the Registry
 	reg, err := factory.LoadRegistry(*catalogsDir)
 	if err != nil {
-		log.Fatalf("Critical: Failed to load catalog registry: %v", err)
+		slog.Error("Critical: Failed to load catalog registry", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	if len(reg.Compositions) == 0 {
-		log.Fatalf("Critical: No household compositions found in %s/compositions.", *catalogsDir)
+		slog.Error("Critical: No household compositions found", slog.String("directory", *catalogsDir))
+		os.Exit(1)
 	}
 
-	log.Printf("Registry loaded: %d Devices, %d Actions, %d Personas, %d Recipes",
-		len(reg.Devices), len(reg.Actions), len(reg.Personas), len(reg.Compositions))
+	slog.Info("Registry loaded",
+		slog.Int("devices", len(reg.Devices)),
+		slog.Int("actions", len(reg.Actions)),
+		slog.Int("personas", len(reg.Personas)),
+		slog.Int("recipes", len(reg.Compositions)))
 
 	// 2. Prepare Output Environment
 	if err := os.MkdirAll(*outDir, 0755); err != nil {
-		log.Fatalf("Failed to create output directory: %v", err)
+		slog.Error("Failed to create output directory", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	// 3. Initialize the Monte Carlo Pipeline
@@ -67,7 +79,7 @@ func main() {
 		req := factory.GenerationRequest{
 			ArchetypeID:            fmt.Sprintf("%s_%03d", recipe.ID, i),
 			RequiredDeviceTags:     recipe.RequiredDeviceTags,
-			RequiredWaterSystemTag: recipe.RequiredWaterSystemTag, // Also ensuring water systems map correctly
+			RequiredWaterSystemTag: recipe.RequiredWaterSystemTag,
 			SystemIDs:              recipe.SystemIDs,
 			RoutineIDs:             recipe.RoutineIDs,
 			AlarmIDs:               recipe.AlarmIDs,
@@ -78,9 +90,8 @@ func main() {
 		for _, preq := range recipe.PersonaRequirements {
 			available := personasByType[preq.Type]
 			if len(available) == 0 {
-				// Only warn if the minimum is greater than 0
 				if preq.Min > 0 {
-					log.Printf("Warning: Recipe %s requires type '%s' but none exist.", recipe.ID, preq.Type)
+					slog.Warn("Recipe requires persona type but none exist", slog.String("recipe", recipe.ID), slog.String("type", preq.Type))
 				}
 				continue
 			}
@@ -101,26 +112,28 @@ func main() {
 		// Execute the Assembly
 		node, err := builder.Generate(req)
 		if err != nil {
-			log.Printf("Warning: Skipping house %03d [%s]: %v", i, recipe.ID, err)
+			slog.Warn("Skipping house", slog.Int("index", i), slog.String("recipe", recipe.ID), slog.Any("error", err))
 			continue
 		}
 
 		// Serialize & Write
 		outData, err := yaml.Marshal(node)
 		if err != nil {
-			log.Fatalf("Failed to marshal YAML for %s: %v", req.ArchetypeID, err)
+			slog.Error("Failed to marshal YAML", slog.String("archetype", req.ArchetypeID), slog.Any("error", err))
+			os.Exit(1)
 		}
 
 		fileName := fmt.Sprintf("%s.yaml", req.ArchetypeID)
 		filePath := filepath.Join(*outDir, fileName)
 
 		if err := os.WriteFile(filePath, outData, 0644); err != nil {
-			log.Fatalf("Failed to write file %s: %v", filePath, err)
+			slog.Error("Failed to write file", slog.String("path", filePath), slog.Any("error", err))
+			os.Exit(1)
 		}
 
 		successCount++
 	}
 
-	log.Printf("--- Profiler Finished ---")
-	log.Printf("Successfully generated %d unique households in %s.", successCount, *outDir)
+	slog.Info("--- Profiler Finished ---")
+	slog.Info("Successfully generated unique households", slog.Int("count", successCount), slog.String("directory", *outDir))
 }

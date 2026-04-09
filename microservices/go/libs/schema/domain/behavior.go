@@ -22,15 +22,16 @@ type DistributionModifier struct {
 }
 
 // ProbabilityDistribution defines how an event or duration is mathematically sampled.
+// In domain/behavior.go
 type ProbabilityDistribution struct {
 	Type      DistributionType       `yaml:"type"`
-	Value     string                 `yaml:"value"`     // Used for Constant
-	Timeframe string                 `yaml:"timeframe"` // E.g., "1h" used to scale probabilities
-	Mean      string                 `yaml:"mean"`      // Used for Normal
-	StdDev    string                 `yaml:"std_dev"`   // Used for Normal
-	Min       float64                `yaml:"min"`       // Used for Uniform
-	Max       float64                `yaml:"max"`       // Used for Uniform
-	Modifiers []DistributionModifier `yaml:"modifiers"` // Supports environmental shifts
+	Value     string                 `yaml:"value,omitempty"`
+	Timeframe string                 `yaml:"timeframe,omitempty"`
+	Mean      string                 `yaml:"mean,omitempty"`
+	StdDev    string                 `yaml:"std_dev,omitempty"`
+	Min       float64                `yaml:"min,omitempty"`
+	Max       float64                `yaml:"max,omitempty"`
+	Modifiers []DistributionModifier `yaml:"modifiers,omitempty"`
 }
 
 // UnmarshalYAML intercepts the parser to convert the human-readable string

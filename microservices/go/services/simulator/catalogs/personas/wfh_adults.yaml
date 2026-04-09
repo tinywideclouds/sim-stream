@@ -8,8 +8,18 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "23:00"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
+            leisure: { amount: 5.0, over: "8h", curve: "linear" }
 
   - id: "wfh_distracted"
     type: "adult"
@@ -19,8 +29,18 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "00:00"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
+            leisure: { amount: 5.0, over: "8h", curve: "linear" }
 
   - id: "wfh_workaholic"
     type: "adult"
@@ -30,8 +50,18 @@ personas:
       - phase_id: "short_sleep"
         type: "sleep"
         anchor_time: "01:00"
-        buffer_duration: "6h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "6h"
+          flexibility: "1h30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
+            hunger: { amount: -25.0, over: "6h", curve: "linear" }
+            hygiene: { amount: -10.0, over: "6h", curve: "linear" }
+            leisure: { amount: 5.0, over: "6h", curve: "linear" }
 
   - id: "wfh_night_owl"
     type: "adult"
@@ -41,8 +71,18 @@ personas:
       - phase_id: "day_sleep"
         type: "sleep"
         anchor_time: "05:00"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
+            leisure: { amount: 5.0, over: "8h", curve: "linear" }
 
   - id: "wfh_fitness_junkie"
     type: "adult"
@@ -52,5 +92,15 @@ personas:
       - phase_id: "early_sleep"
         type: "sleep"
         anchor_time: "21:30"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -35.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
+            leisure: { amount: 5.0, over: "8h", curve: "linear" }

@@ -45,14 +45,14 @@ type AlarmTemplate struct {
 	Duration string `yaml:"duration"` // e.g., "45m"
 }
 
-// UtilityModifier applies a flat bonus based on a discrete context state (like an alarm ringing).
-type UtilityModifier struct {
+// ActionModifier applies a flat bonus based on a discrete context state (like an alarm ringing).
+type ActionModifier struct {
 	Condition EngineCondition `yaml:"condition"`
 	Boost     float64         `yaml:"boost"`
 }
 
-// UtilityBonusCurve applies a smooth bell-curve bonus based on a sliding context value (like time of day).
-type UtilityBonusCurve struct {
+// BonusCurve applies a smooth bell-curve bonus based on a sliding context value (like time of day).
+type BonusCurve struct {
 	ContextKey string  `yaml:"context_key"` // e.g., "time.hour"
 	Peak       float64 `yaml:"peak"`
 	Width      float64 `yaml:"width"`
@@ -61,24 +61,18 @@ type UtilityBonusCurve struct {
 
 // ActionTemplate defines a dynamic choice an actor can make.
 type ActionTemplate struct {
-	ActionID  string   `yaml:"action_id"`
-	ActorTags []string `yaml:"actor_tags"`
-	DeviceID  string   `yaml:"device_id"`
-
-	Satisfies map[string]ActionFill `yaml:"satisfies"`
-
-	Costs    map[string]float64 `yaml:"costs"`
-	Produces map[string]float64 `yaml:"produces"`
-	Requires map[string]float64 `yaml:"requires"`
-
-	AvailableWhen []EngineCondition   `yaml:"available_when"`
-	Modifiers     []UtilityModifier   `yaml:"modifiers"`
-	BonusCurves   []UtilityBonusCurve `yaml:"bonus_curves"`
-	Interruptible bool                `yaml:"interruptible"`
-
-	InitiationFriction float64 `yaml:"initiation_friction"`
-
-	ExpectedMeters map[string]float64 `yaml:"expected_meters"`
-
-	Duration ProbabilityDistribution `yaml:"duration"`
+	ActionID           string                  `yaml:"action_id"`
+	ActorTags          []string                `yaml:"actor_tags"`
+	DeviceID           string                  `yaml:"device_id,omitempty"`
+	Satisfies          map[string]ActionFill   `yaml:"satisfies,omitempty"`
+	Costs              map[string]float64      `yaml:"costs,omitempty"`
+	Produces           map[string]float64      `yaml:"produces,omitempty"`
+	Requires           map[string]float64      `yaml:"requires,omitempty"`
+	AvailableWhen      []EngineCondition       `yaml:"available_when,omitempty"`
+	Modifiers          []ActionModifier        `yaml:"modifiers,omitempty"`
+	BonusCurves        []BonusCurve            `yaml:"bonus_curves,omitempty"`
+	Interruptible      bool                    `yaml:"interruptible"`
+	InitiationFriction float64                 `yaml:"initiation_friction,omitempty"`
+	ExpectedMeters     map[string]float64      `yaml:"expected_meters,omitempty"`
+	Duration           ProbabilityDistribution `yaml:"duration"`
 }

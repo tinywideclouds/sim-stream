@@ -21,3 +21,11 @@ compositions:
     system_ids:
       - "ambient_thermostat"
     required_water_system_tag: "large_residential"
+    routine_ids: []
+    alarm_ids: []
+    event_ids:
+      - "family_dinner"
+      - "shared_movie_night"
+      - "sunday_park_trip"
+      - "big_grocery_shop"
+      - "weekend_deep_clean"

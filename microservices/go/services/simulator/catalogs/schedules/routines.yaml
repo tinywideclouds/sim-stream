@@ -1,19 +1,20 @@
-# catalogs/schedules/routines.yaml
-collective_events:
-  - id: "family_dinner"
-    selection:
-      weight: 0.9 
-      default_frequency: "5_per_week"
+# catalogs/schedules/routines.yaml (The real one)
+routines:
+  - id: "standard_morning_prep"
     template:
-      event_id: "family_dinner"
-      action: "cook_large_dinner"
-      base_fragility: 0.05
-      abort_conditions: [] # Rain or shine, people gotta eat
-      lead_requirement: "adult"
-      dependent_rules:
-        - type: "adult"
-          friction_weight: 0.5
-          patience_limit: "15m"
-        - type: "child"
-          friction_weight: 0.2
-          patience_limit: "5m"
+      routine_id: "standard_morning_prep"
+      priority: 100 # Overrides pure utility AI
+      trigger:
+        type: 3 # Triggered by a phase transition
+        base_conditions:
+          - context_key: "phase.current"
+            operator: "=="
+            value: "home" # Waking up
+          - context_key: "phase.next"
+            operator: "=="
+            value: "away" # Heading to work/school
+      sequence:
+        - action_id: "quick_shower"
+        - action_id: "make_hot_drink"
+        - action_id: "quick_cold_breakfast"
+        - action_id: "brush_teeth_and_wash_face"

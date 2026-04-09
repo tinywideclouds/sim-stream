@@ -25,7 +25,7 @@ func Compile(intent PersonaIntent, icStrategy string) domain.NodeArchetype {
 	actions = append(actions, hygieneActions...)
 	actions = append(actions, foodActions...)
 
-	actor := domain.ActorTemplate{
+	actor := domain.Actor{
 		ActorID:            intent.Archetype,
 		Type:               "adult",
 		AIModel:            "utility",
@@ -35,13 +35,13 @@ func Compile(intent PersonaIntent, icStrategy string) domain.NodeArchetype {
 
 	node := domain.NodeArchetype{
 		ArchetypeID:         intent.HouseholdID,
-		Description:         "Compiled V3 Topography - Strategy: " + icStrategy,
+		Description:         "Compiled Emergent Topography - Strategy: " + icStrategy,
 		BaseTempC:           18.0,
 		InsulationDecayRate: 0.1,
-		Actors:              []domain.ActorTemplate{actor},
+		Actors:              []domain.Actor{actor},
 		Meters:              meters,
 		Actions:             actions,
-		Devices:             hardware, // ATTACHED HERE
+		Devices:             hardware,
 	}
 
 	return node

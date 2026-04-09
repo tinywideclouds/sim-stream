@@ -24,7 +24,7 @@ func TestOrchestratorPipeline(t *testing.T) {
 			StandbyTemperatureLossTick: 0.0, // Disable standby loss for easier math
 		},
 		Devices: []domain.DeviceTemplate{},
-		Actors:  []domain.ActorTemplate{},
+		Actors:  []domain.Actor{},
 	}
 	state := engine.NewSimulationState(blueprint, time.Now())
 

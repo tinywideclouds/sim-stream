@@ -11,9 +11,11 @@ import (
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
+const hourMinute = "15:04"
+
 type UtilityBrain interface {
 	ResetMeters(actorID string, startingMeters map[string]float64)
-	ApplyModifiersToMeters(actorID string, modifiers map[string]float64, limits map[string]float64)
+	ApplyModifiersToMeters(actorID string, modifiers map[string]domain.ContinuousEffect, limits map[string]float64)
 	Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string)
 	HasMeters(actorID string, costs map[string]float64) bool
 
@@ -21,8 +23,7 @@ type UtilityBrain interface {
 	GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64
 	GetActorSnapshot(actorID string) parsers.StateSnapshot
 
-	// ForceTask injects a continuous macro-phase (like sleep) into the biological solver
-	ForceTask(actorID string, actionID string, duration time.Duration, state *engine.SimulationState)
+	ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill)
 }
 
 type RoutineBrain interface {
@@ -39,7 +40,7 @@ type StableEngine struct {
 
 	Burnout        map[string]float64
 	activePhase    map[string]string
-	pendingReEntry map[string]*domain.AwayProfile
+	pendingReEntry map[string]domain.PhaseModifiers
 }
 
 func NewStableEngine(utility UtilityBrain, routine RoutineBrain, cal CalendarProvider, samp *generator.Sampler) *StableEngine {
@@ -50,14 +51,14 @@ func NewStableEngine(utility UtilityBrain, routine RoutineBrain, cal CalendarPro
 		sampler:        samp,
 		Burnout:        make(map[string]float64),
 		activePhase:    make(map[string]string),
-		pendingReEntry: make(map[string]*domain.AwayProfile),
+		pendingReEntry: make(map[string]domain.PhaseModifiers),
 	}
 }
 
 func (se *StableEngine) getEnergyUrgency(actorID string, state *engine.SimulationState) float64 {
 	snap := se.utilityBrain.GetActorSnapshot(actorID)
 	if snap == nil {
-		return 0.5 // Neutral default
+		return 0.5
 	}
 
 	energyVal, ok := snap["actor.energy"].(float64)
@@ -74,8 +75,6 @@ func (se *StableEngine) getEnergyUrgency(actorID string, state *engine.Simulatio
 	}
 
 	urgency := (maxEnergy - energyVal) / maxEnergy
-
-	// Strictly clamp between 0.0 and 1.0 to prevent spring explosions
 	if urgency < 0.0 {
 		urgency = 0.0
 	}
@@ -86,88 +85,103 @@ func (se *StableEngine) getEnergyUrgency(actorID string, state *engine.Simulatio
 	return urgency
 }
 
-// calculatePhaseTimes applies Asymmetric Spring Physics to determine the exact dynamic start and end times.
-func (se *StableEngine) calculatePhaseTimes(actor domain.ActorTemplate, phase domain.DailyPhase, state *engine.SimulationState, dayType string) (time.Time, time.Time) {
-	anchor, err := time.Parse("15:04", phase.AnchorTime)
+func (se *StableEngine) CalculatePhaseTimes(actor domain.Actor, phase domain.Phase, state *engine.SimulationState, dayType string) (time.Time, time.Time, time.Duration, time.Duration) {
+	if phase.Type == "sleep" {
+		return se.calculateSleepPhase(actor, phase, state, dayType)
+	}
+	return se.calculateGenericPhase(actor, phase, state, dayType)
+}
+
+func (se *StableEngine) calculateSleepPhase(actor domain.Actor, phase domain.Phase, state *engine.SimulationState, dayType string) (time.Time, time.Time, time.Duration, time.Duration) {
+	anchor, err := time.Parse(hourMinute, phase.AnchorTime)
 	if err != nil {
-		return state.SimTime, state.SimTime
+		return state.SimTime, state.SimTime, 0, 0
+	}
+
+	normalSleepStart := time.Date(state.SimTime.Year(), state.SimTime.Month(), state.SimTime.Day(), anchor.Hour(), anchor.Minute(), 0, 0, state.SimTime.Location())
+	if state.SimTime.Hour() < 12 && anchor.Hour() > 12 {
+		normalSleepStart = normalSleepStart.Add(-24 * time.Hour)
+	} else if state.SimTime.Hour() > 12 && anchor.Hour() < 12 {
+		normalSleepStart = normalSleepStart.Add(24 * time.Hour)
+	}
+
+	baseDuration, _ := se.sampler.Duration(phase.Duration.ProbabilityDistribution)
+	if baseDuration == 0 {
+		baseDuration = 8 * time.Hour
+	}
+	normalSleepWake := normalSleepStart.Add(baseDuration)
+
+	maxShift := phase.Duration.Flexibility
+	if maxShift <= 0 {
+		maxShift = 1 * time.Hour
+	}
+
+	urgency := se.getEnergyUrgency(actor.ActorID, state)
+	factor := (urgency - 0.5) / 0.5
+
+	startShift := time.Duration(-float64(maxShift) * factor)
+
+	var endShift time.Duration
+	hasWorkdayWall := false
+	for _, p := range actor.Phases {
+		if p.Type == "away" {
+			hasWorkdayWall = true
+			break
+		}
+	}
+
+	if dayType == "workday" && hasWorkdayWall {
+		if startShift > 0 {
+			endShift = 15 * time.Minute
+			if endShift > startShift {
+				endShift = startShift
+			}
+		} else {
+			endShift = time.Duration(float64(startShift) * 0.1)
+		}
+	} else {
+		if startShift > 0 {
+			endShift = startShift
+		} else {
+			endShift = 0
+		}
+	}
+
+	actualSleepStart := normalSleepStart.Add(startShift)
+	actualSleepWake := normalSleepWake.Add(endShift)
+
+	return actualSleepStart, actualSleepWake, startShift, endShift
+}
+
+func (se *StableEngine) calculateGenericPhase(actor domain.Actor, phase domain.Phase, state *engine.SimulationState, dayType string) (time.Time, time.Time, time.Duration, time.Duration) {
+	anchor, err := time.Parse(hourMinute, phase.AnchorTime)
+	if err != nil {
+		return state.SimTime, state.SimTime, 0, 0
 	}
 
 	baseStart := time.Date(state.SimTime.Year(), state.SimTime.Month(), state.SimTime.Day(), anchor.Hour(), anchor.Minute(), 0, 0, state.SimTime.Location())
-
 	if state.SimTime.Hour() < 12 && anchor.Hour() > 12 {
 		baseStart = baseStart.Add(-24 * time.Hour)
 	} else if state.SimTime.Hour() > 12 && anchor.Hour() < 12 {
 		baseStart = baseStart.Add(24 * time.Hour)
 	}
 
-	var baseDuration time.Duration
-	if phase.Type == domain.PhaseTypeSleep {
-		baseDuration, _ = time.ParseDuration(phase.BufferDuration)
-		if baseDuration == 0 {
-			baseDuration = 8 * time.Hour
-		}
-	} else if phase.Type == domain.PhaseTypeAway && phase.AwayProfile != nil {
-		baseDuration, _ = se.sampler.Duration(phase.AwayProfile.Duration)
-		if baseDuration == 0 {
-			baseDuration = 8 * time.Hour
-		}
+	baseDuration, _ := se.sampler.Duration(phase.Duration.ProbabilityDistribution)
+	if baseDuration == 0 {
+		baseDuration = 8 * time.Hour
 	}
 
-	baseEnd := baseStart.Add(baseDuration)
-	startShift := time.Duration(0)
-	endShift := time.Duration(0)
-
-	if phase.Type == domain.PhaseTypeSleep {
-		urgency := se.getEnergyUrgency(actor.ActorID, state)
-
-		// 1. Bedtime Spring (Loose & Biological)
-		if urgency > 0.5 {
-			factor := (urgency - 0.5) / 0.5
-			startShift = time.Duration(-45.0 * float64(time.Minute) * factor) // Max early: -45m
-		} else {
-			factor := (0.5 - urgency) / 0.5
-			startShift = time.Duration(120.0 * float64(time.Minute) * factor) // Max late: +2h
-		}
-
-		// 2. Wakeup Spring (Stiff & Societal)
-		hasWorkdayWall := false
-		for _, p := range actor.Phases {
-			if p.Type == domain.PhaseTypeAway {
-				hasWorkdayWall = true
-				break
-			}
-		}
-
-		if dayType == "workday" && hasWorkdayWall {
-			// Stiff Spring (Societal Pressure)
-			if urgency > 0.5 {
-				factor := (urgency - 0.5) / 0.5
-				endShift = time.Duration(20.0 * float64(time.Minute) * factor) // Max snooze: +20m
-			} else {
-				factor := (0.5 - urgency) / 0.5
-				endShift = time.Duration(-15.0 * float64(time.Minute) * factor) // Max early wake: -15m
-			}
-		} else {
-			// Slack Spring (Weekend / Retired)
-			if urgency > 0.5 {
-				factor := (urgency - 0.5) / 0.5
-				endShift = time.Duration(150.0 * float64(time.Minute) * factor) // Max sleep-in: +2.5h
-			} else {
-				factor := (0.5 - urgency) / 0.5
-				endShift = time.Duration(-60.0 * float64(time.Minute) * factor) // Max early wake: -1h
-			}
-		}
-	} else if phase.Type == domain.PhaseTypeAway {
-		// Basic 10% elasticity for generic away phases
-		urgency := se.getEnergyUrgency(actor.ActorID, state)
-		maxShift := time.Duration(float64(baseDuration) * 0.10)
-		pullFactor := (0.5 - urgency) * 2.0
-		startShift = time.Duration(float64(maxShift) * pullFactor)
-		endShift = startShift // The whole block shifts
+	maxShift := phase.Duration.Flexibility
+	if maxShift <= 0 {
+		maxShift = 1 * time.Hour
 	}
 
-	return baseStart.Add(startShift), baseEnd.Add(endShift)
+	urgency := se.getEnergyUrgency(actor.ActorID, state)
+	pullFactor := (0.5 - urgency) * 2.0
+	startShift := time.Duration(float64(maxShift) * pullFactor)
+	endShift := startShift
+
+	return baseStart.Add(startShift), baseStart.Add(baseDuration).Add(startShift), startShift, endShift
 }
 
 func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
@@ -213,7 +227,7 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 			}
 
 			if ledger.CurrentState == domain.ActorStateAway {
-				if profile, exists := se.pendingReEntry[actor.ActorID]; exists && profile != nil {
+				if mods, exists := se.pendingReEntry[actor.ActorID]; exists && mods.Application == "block_end" {
 					limits := make(map[string]float64)
 					for _, m := range state.Blueprint.Meters {
 						if m.Max > 0 {
@@ -222,9 +236,11 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 							limits[m.MeterID] = 100.0
 						}
 					}
-					se.utilityBrain.ApplyModifiersToMeters(actor.ActorID, profile.Modifiers, limits)
+					se.utilityBrain.ApplyModifiersToMeters(actor.ActorID, mods.Effects, limits)
 				}
 			}
+
+			slog.Info("PHASE COMPLETED", "actor", actor.ActorID, "state", ledger.CurrentState, "return_time", state.SimTime.Format(hourMinute))
 
 			ledger.CurrentState = domain.ActorStateHomeFree
 			delete(se.pendingReEntry, actor.ActorID)
@@ -240,42 +256,67 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 					continue
 				}
 
-				actualStart, actualEnd := se.calculatePhaseTimes(*actor, phase, state, dayType)
+				actualStart, actualEnd, startShift, endShift := se.CalculatePhaseTimes(*actor, phase, state, dayType)
 				actualDuration := actualEnd.Sub(actualStart)
 				timeSinceTrigger := state.SimTime.Sub(actualStart)
 
 				if !state.SimTime.Before(actualStart) && timeSinceTrigger < actualDuration {
-
-					// Only log exactly when the transition triggers
-					if timeSinceTrigger < tickDuration*2 {
-						slog.Info("Phase Applied (Asymmetric Elasticity)", "actor", actor.ActorID, "phase", phase.PhaseID, "shifted_start", actualStart.Format("15:04"), "shifted_wakeup", actualEnd.Format("15:04"))
-					}
 
 					remainingDuration := actualDuration - timeSinceTrigger
 					if remainingDuration < 0 {
 						remainingDuration = 0
 					}
 
-					if phase.Type == domain.PhaseTypeAway && dayType == "workday" {
+					if phase.Type == "away" && dayType == "workday" {
+						slog.Info("AWAY ENGAGED (Linear Spring)",
+							"actor", actor.ActorID,
+							"phase", phase.PhaseID,
+							"target_leave", actualStart.Add(-startShift).Format(hourMinute),
+							"actual_leave", actualStart.Format(hourMinute),
+							"leave_shift", startShift.String(),
+							"target_return", actualEnd.Add(-endShift).Format(hourMinute),
+							"actual_return", actualEnd.Format(hourMinute),
+							"return_shift", endShift.String(),
+						)
+
 						ledger.CurrentState = domain.ActorStateAway
 						se.activePhase[actor.ActorID] = phase.PhaseID
-						se.pendingReEntry[actor.ActorID] = phase.AwayProfile
+						se.pendingReEntry[actor.ActorID] = phase.Modifiers
 						ledger.StateEndsAt = state.SimTime.Add(remainingDuration)
 
-						// Optional: Pass an action ID if you want away time to be tracked continually
-						se.utilityBrain.ForceTask(actor.ActorID, phase.PhaseID, remainingDuration, state)
+						satisfies := make(map[string]domain.ActionFill)
+						if phase.Modifiers.Application == "continuous" {
+							for m, eff := range phase.Modifiers.Effects {
+								satisfies[m] = domain.ActionFill{Amount: eff.Amount, Curve: eff.Curve}
+							}
+						}
+						se.utilityBrain.ForceTask(actor.ActorID, phase.PhaseID, remainingDuration, state.SimTime, satisfies)
 
 						onMacroRail = true
 						break
 
-					} else if phase.Type == domain.PhaseTypeSleep {
+					} else if phase.Type == "sleep" {
+						slog.Info("SLEEP ENGAGED (Asymmetric Spring)",
+							"actor", actor.ActorID,
+							"target_bedtime", actualStart.Add(-startShift).Format(hourMinute),
+							"actual_bedtime", actualStart.Format(hourMinute),
+							"start_shift", startShift.String(),
+							"target_wakeup", actualEnd.Add(-endShift).Format(hourMinute),
+							"actual_wakeup", actualEnd.Format(hourMinute),
+							"wake_shift", endShift.String(),
+						)
+
 						ledger.CurrentState = domain.ActorStateAsleep
 						se.activePhase[actor.ActorID] = phase.PhaseID
 						ledger.StateEndsAt = state.SimTime.Add(remainingDuration)
 
-						// Forces the specific sleep task into the utility engine so energy recovers
-						// continuously and it logs beautifully to the CSV.
-						se.utilityBrain.ForceTask(actor.ActorID, phase.PhaseID, remainingDuration, state)
+						satisfies := make(map[string]domain.ActionFill)
+						if phase.Modifiers.Application == "continuous" {
+							for m, eff := range phase.Modifiers.Effects {
+								satisfies[m] = domain.ActionFill{Amount: eff.Amount, Curve: eff.Curve}
+							}
+						}
+						se.utilityBrain.ForceTask(actor.ActorID, phase.PhaseID, remainingDuration, state.SimTime, satisfies)
 
 						onMacroRail = true
 						break

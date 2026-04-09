@@ -11,7 +11,7 @@ import (
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
-func evaluateGaussianBonus(curve domain.UtilityBonusCurve, currentValue float64) float64 {
+func evaluateGaussianBonus(curve domain.BonusCurve, currentValue float64) float64 {
 	distance := math.Abs(currentValue - curve.Peak)
 	if curve.ContextKey == "time.hour_float" && distance > 12.0 {
 		distance = 24.0 - distance
@@ -20,14 +20,12 @@ func evaluateGaussianBonus(curve domain.UtilityBonusCurve, currentValue float64)
 	return curve.Magnitude * math.Exp(exponent)
 }
 
-// GetInterruptAction checks if any meter is critically low and returns an action to fix it.
 func (ue *UtilityEngine) GetInterruptAction(actorID string, state *engine.SimulationState) string {
 	actorMeters, exists := ue.meters[actorID]
 	if !exists {
 		return ""
 	}
 
-	// 1. Identify if any meter has reached the interrupt threshold
 	criticalThreshold := 15.0
 	var mostCriticalMeter string
 	var lowestValue float64 = 100.0
@@ -43,10 +41,8 @@ func (ue *UtilityEngine) GetInterruptAction(actorID string, state *engine.Simula
 		return ""
 	}
 
-	// 2. Find the best action to satisfy this critical meter
 	var bestAction string
 	var highestImpact float64 = 0.0
-
 	var actorType string
 	for _, a := range state.Blueprint.Actors {
 		if a.ActorID == actorID {
@@ -67,11 +63,9 @@ func (ue *UtilityEngine) GetInterruptAction(actorID string, state *engine.Simula
 				}
 			}
 		}
-
 		if !hasPermission {
 			continue
 		}
-
 		if fill, exists := action.Satisfies[mostCriticalMeter]; exists && fill.Amount > highestImpact {
 			highestImpact = fill.Amount
 			bestAction = action.ActionID
@@ -106,10 +100,6 @@ func NewUtilityEngine(sampler *generator.Sampler) *UtilityEngine {
 	}
 }
 
-// ------------------------------------------------------------------
-// PUBLIC APIs FOR THE STABLE ENGINE (ARBITER) & ROUTINE ENGINE
-// ------------------------------------------------------------------
-
 func (ue *UtilityEngine) ResetMeters(actorID string, startingMeters map[string]float64) {
 	if _, exists := ue.meters[actorID]; !exists {
 		ue.meters[actorID] = make(map[string]float64)
@@ -119,12 +109,13 @@ func (ue *UtilityEngine) ResetMeters(actorID string, startingMeters map[string]f
 	}
 }
 
-func (ue *UtilityEngine) ApplyModifiersToMeters(actorID string, modifiers map[string]float64, limits map[string]float64) {
+// Updated to accept the new ContinuousEffect mapping for block_end applications
+func (ue *UtilityEngine) ApplyModifiersToMeters(actorID string, modifiers map[string]domain.ContinuousEffect, limits map[string]float64) {
 	if _, exists := ue.meters[actorID]; !exists {
 		return
 	}
-	for meterID, shift := range modifiers {
-		ue.meters[actorID][meterID] += shift
+	for meterID, effect := range modifiers {
+		ue.meters[actorID][meterID] += effect.Amount
 		if ue.meters[actorID][meterID] < 0.0 {
 			ue.meters[actorID][meterID] = 0.0
 		}
@@ -139,7 +130,6 @@ func (ue *UtilityEngine) HasMeters(actorID string, costs map[string]float64) boo
 	if !exists {
 		return false
 	}
-
 	for meterID, cost := range costs {
 		currentVal, ok := actorMeters[meterID]
 		if ok && currentVal < cost {
@@ -154,12 +144,10 @@ func (ue *UtilityEngine) GetActorSnapshot(actorID string) parsers.StateSnapshot 
 	if !exists {
 		return nil
 	}
-
 	snapshot := make(parsers.StateSnapshot)
 	for meterID, value := range actorMeters {
 		snapshot["actor."+meterID] = value
 	}
-
 	return snapshot
 }
 
@@ -178,7 +166,6 @@ func (ue *UtilityEngine) GetActionUrgency(actorID string, actionID string, state
 			break
 		}
 	}
-
 	if !found {
 		return 0.0
 	}
@@ -198,42 +185,29 @@ func (ue *UtilityEngine) GetActionUrgency(actorID string, actionID string, state
 		if !hasMeter {
 			continue
 		}
-
 		maxVal := maxMeters[meterID]
 		deficit := maxVal - currentVal
-
 		if deficit > 0 {
 			deficitRatio := deficit / maxVal
 			urgency += deficitRatio * fill.Amount
 		}
 	}
-
 	return urgency
 }
 
-// ForceTask injects a continuous macro-phase (like sleep) directly into the biological solver
-func (ue *UtilityEngine) ForceTask(actorID string, actionID string, duration time.Duration, state *engine.SimulationState) {
+// Updated to accept the translated ActionFill maps directly from the Arbiter
+func (ue *UtilityEngine) ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
 	delete(ue.activeTasks, actorID)
 	delete(ue.activeAction, actorID)
 
-	var satisfies map[string]domain.ActionFill
-	for _, act := range state.Blueprint.Actions {
-		if act.ActionID == actionID {
-			satisfies = act.Satisfies
-			break
-		}
-	}
-
-	ue.activeAction[actorID] = actionID
+	ue.activeAction[actorID] = taskName
 	ue.activeTasks[actorID] = &ActiveTask{
-		ActionID:      actionID,
-		StartTime:     state.SimTime,
+		ActionID:      taskName,
+		StartTime:     startTime,
 		TotalDuration: duration,
 		Satisfies:     satisfies,
 	}
 }
-
-// ------------------------------------------------------------------
 
 func calculateCurveIntegral(curve string, p float64) float64 {
 	if p <= 0.0 {
@@ -285,7 +259,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 
 		actorLedger := state.Actors[actor.ActorID]
 
-		// Bypass Away, but NOT Asleep. Asleep actors need meter recovery.
 		if actorLedger.CurrentState == domain.ActorStateAway {
 			continue
 		}
@@ -293,7 +266,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 		// 1. BASE DECAY APPLICATION
 		for _, m := range state.Blueprint.Meters {
 			decayAmount := m.BaseDecayPerHour * (tickDuration.Seconds() / 3600.0)
-
 			if m.Curve == "exponential" {
 				currentVal := ue.meters[actor.ActorID][m.MeterID]
 				factor := (maxMeters[m.MeterID] - currentVal) / maxMeters[m.MeterID]
@@ -302,7 +274,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 				}
 				decayAmount *= (1.0 + factor)
 			}
-
 			ue.meters[actor.ActorID][m.MeterID] -= decayAmount
 			if ue.meters[actor.ActorID][m.MeterID] < 0 {
 				ue.meters[actor.ActorID][m.MeterID] = 0
@@ -327,7 +298,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 					deltaPercentage := integralNow - integralPrev
 					if deltaPercentage > 0 {
 						ue.meters[actor.ActorID][meterID] += fill.Amount * deltaPercentage
-
 						limit := maxMeters[meterID]
 						if ue.meters[actor.ActorID][meterID] > limit {
 							ue.meters[actor.ActorID][meterID] = limit
@@ -378,7 +348,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 				}
 
 				rawUrgency := deficit / maxMeters[meterID]
-
 				curveType := "linear"
 				for _, m := range state.Blueprint.Meters {
 					if m.MeterID == meterID {
@@ -432,11 +401,7 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 
 		// 6. EXECUTE CHOSEN ACTION
 		if len(wheel) > 0 {
-			rollDist := domain.ProbabilityDistribution{
-				Type: domain.DistributionTypeUniform,
-				Min:  0.0,
-				Max:  1.0,
-			}
+			rollDist := domain.ProbabilityDistribution{Type: domain.DistributionTypeUniform, Min: 0.0, Max: 1.0}
 			fVal, err := ue.sampler.Float64(rollDist)
 			if err != nil {
 				fVal = 0.5
@@ -512,7 +477,6 @@ func applyUrgencyCurve(curve string, p float64) float64 {
 	if p >= 1.0 {
 		return 1.0
 	}
-
 	switch curve {
 	case "front_loaded":
 		return 1.0 - math.Pow(1.0-p, 3)

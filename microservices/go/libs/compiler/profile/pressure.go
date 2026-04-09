@@ -47,7 +47,7 @@ func GeneratePressure(intent PersonaIntent) ([]domain.MeterTemplate, []domain.Ac
 			Type:  domain.DistributionTypeConstant,
 			Value: "45m",
 		},
-		BonusCurves: []domain.UtilityBonusCurve{
+		BonusCurves: []domain.BonusCurve{
 			{
 				ContextKey: "time.hour_float",
 				Peak:       intent.Schedule.WorkStart - 0.75, // e.g., 07:45 AM
@@ -72,7 +72,7 @@ func GeneratePressure(intent PersonaIntent) ([]domain.MeterTemplate, []domain.Ac
 			Type:  domain.DistributionTypeConstant,
 			Value: "8h", // The actual fixed working hours
 		},
-		BonusCurves: []domain.UtilityBonusCurve{
+		BonusCurves: []domain.BonusCurve{
 			{
 				ContextKey: "time.hour_float",
 				Peak:       intent.Schedule.WorkStart + 0.25, // e.g., 08:45 AM

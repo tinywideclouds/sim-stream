@@ -18,7 +18,7 @@ func TestNewSimulationState(t *testing.T) {
 			{DeviceID: "kettle_1"},
 			{DeviceID: "shower_1"},
 		},
-		Actors: []domain.ActorTemplate{
+		Actors: []domain.Actor{
 			{ActorID: "parent_1"},
 			{ActorID: "teenager_1"},
 		},

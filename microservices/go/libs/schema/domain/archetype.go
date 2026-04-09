@@ -33,7 +33,7 @@ type NodeArchetype struct {
 	Scenarios []ScenarioTemplate `yaml:"scenarios"`
 
 	// The Entities (Humans & Systems)
-	Actors []ActorTemplate `yaml:"actors"`
+	Actors []Actor `yaml:"actors"`
 
 	// Routine Blueprints (The Rails)
 	RoutineTemplates []RoutineTemplate `yaml:"routine_templates"`

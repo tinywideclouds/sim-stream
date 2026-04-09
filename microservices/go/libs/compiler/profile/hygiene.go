@@ -17,7 +17,7 @@ func GenerateHygiene(intent PersonaIntent) []domain.ActionTemplate {
 	}
 
 	// Suppress the desire to clean oneself in the middle of the night
-	nightSuppression := domain.UtilityBonusCurve{
+	nightSuppression := domain.BonusCurve{
 		ContextKey: "time.hour_float",
 		Peak:       3.0,
 		Width:      1.5,
@@ -32,7 +32,7 @@ func GenerateHygiene(intent PersonaIntent) []domain.ActionTemplate {
 			Satisfies: map[string]domain.ActionFill{
 				"hygiene": {Amount: 80.0, Curve: "ease_out"},
 			},
-			BonusCurves: []domain.UtilityBonusCurve{nightSuppression}, // ATTACHED
+			BonusCurves: []domain.BonusCurve{nightSuppression}, // ATTACHED
 			Duration: domain.ProbabilityDistribution{
 				Type:   domain.DistributionTypeNormal,
 				Mean:   "10m",

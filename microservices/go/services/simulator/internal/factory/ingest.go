@@ -4,7 +4,7 @@ package factory
 import (
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,7 +30,7 @@ type CatalogEnvelope struct {
 func LoadRegistry(catalogDir string) (*Registry, error) {
 	reg := NewRegistry()
 
-	log.Printf("[DEBUG] Starting WalkDir in: %s", catalogDir)
+	slog.Debug("Starting WalkDir", slog.String("directory", catalogDir))
 
 	err := filepath.WalkDir(catalogDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -41,7 +41,7 @@ func LoadRegistry(catalogDir string) (*Registry, error) {
 			return nil
 		}
 
-		log.Printf("[DEBUG] Found YAML file: %s", path)
+		slog.Debug("Found YAML file", slog.String("file", path))
 
 		if err := IngestFile(path, reg); err != nil {
 			return fmt.Errorf("failed to ingest %s: %w", path, err)
@@ -69,8 +69,15 @@ func IngestFile(filePath string, reg *Registry) error {
 		return fmt.Errorf("yaml unmarshal error: %w", err)
 	}
 
-	log.Printf("[DEBUG] Parsed %s -> Devices: %d, Actions: %d, Personas: %d, Systems: %d, Compositions: %d",
-		filePath, len(envelope.Devices), len(envelope.Actions), len(envelope.Personas), len(envelope.Systems), len(envelope.Compositions))
+	slog.Info("Parsed YAML file",
+		slog.String("file", filePath),
+		slog.Int("devices", len(envelope.Devices)),
+		slog.Int("actions", len(envelope.Actions)),
+		slog.Int("personas", len(envelope.Personas)),
+		slog.Int("systems", len(envelope.Systems)),
+		slog.Int("compositions", len(envelope.Compositions)),
+		slog.Int("events", len(envelope.CollectiveEvents)),
+	)
 
 	for _, ws := range envelope.WaterSystems {
 		if err := reg.AddWaterSystem(ws); err != nil {
@@ -79,35 +86,35 @@ func IngestFile(filePath string, reg *Registry) error {
 	}
 
 	for i, dev := range envelope.Devices {
-		log.Printf("[DEBUG] Registering Device [%d]: %s", i, dev.ID)
+		slog.Debug("Registering Device", slog.Int("index", i), slog.String("id", dev.ID))
 		if err := reg.AddDevice(dev); err != nil {
 			return err
 		}
 	}
 
 	for i, act := range envelope.Actions {
-		log.Printf("[DEBUG] Registering Action [%d]: %s", i, act.ID)
+		slog.Debug("Registering Action", slog.Int("index", i), slog.String("id", act.ID))
 		if err := reg.AddAction(act); err != nil {
 			return err
 		}
 	}
 
 	for i, per := range envelope.Personas {
-		log.Printf("[DEBUG] Registering Persona [%d]: %s", i, per.ID)
+		slog.Debug("Registering Persona", slog.Int("index", i), slog.String("id", per.ID))
 		if err := reg.AddPersona(per); err != nil {
 			return err
 		}
 	}
 
 	for i, sys := range envelope.Systems {
-		log.Printf("[DEBUG] Registering System [%d]: %s", i, sys.ID)
+		slog.Debug("Registering System", slog.Int("index", i), slog.String("id", sys.ID))
 		if err := reg.AddSystem(sys); err != nil {
 			return err
 		}
 	}
 
 	for i, comp := range envelope.Compositions {
-		log.Printf("[DEBUG] Registering Composition [%d]: %s", i, comp.ID)
+		slog.Debug("Registering Composition", slog.Int("index", i), slog.String("id", comp.ID))
 		if err := reg.AddComposition(comp); err != nil {
 			return err
 		}

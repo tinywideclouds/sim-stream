@@ -16,7 +16,7 @@ func GenerateFood(intent PersonaIntent) []domain.ActionTemplate {
 		}
 	}
 
-	nightSuppression := domain.UtilityBonusCurve{
+	nightSuppression := domain.BonusCurve{
 		ContextKey: "time.hour_float",
 		Peak:       3.0, // 3:00 AM
 		Width:      1.5,
@@ -31,7 +31,7 @@ func GenerateFood(intent PersonaIntent) []domain.ActionTemplate {
 			"hunger": {Amount: 15.0, Curve: "linear"},
 			"energy": {Amount: 5.0, Curve: "linear"},
 		},
-		BonusCurves: []domain.UtilityBonusCurve{nightSuppression},
+		BonusCurves: []domain.BonusCurve{nightSuppression},
 		Duration: domain.ProbabilityDistribution{
 			Type:  domain.DistributionTypeConstant,
 			Value: "5m",
@@ -54,7 +54,7 @@ func GenerateFood(intent PersonaIntent) []domain.ActionTemplate {
 				Mean:   "16m",
 				StdDev: "4m",
 			},
-			BonusCurves: []domain.UtilityBonusCurve{
+			BonusCurves: []domain.BonusCurve{
 				nightSuppression,
 				{
 					ContextKey: "time.hour_float",
@@ -81,7 +81,7 @@ func GenerateFood(intent PersonaIntent) []domain.ActionTemplate {
 			Mean:   "35m",
 			StdDev: "5m",
 		},
-		BonusCurves: []domain.UtilityBonusCurve{
+		BonusCurves: []domain.BonusCurve{
 			nightSuppression,
 			{
 				ContextKey: "time.hour_float",

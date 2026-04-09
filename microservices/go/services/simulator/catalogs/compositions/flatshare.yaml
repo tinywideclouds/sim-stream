@@ -17,3 +17,10 @@ compositions:
     system_ids:
       - "ambient_thermostat"
     required_water_system_tag: "small_residential"
+    routine_ids: []
+    alarm_ids: []
+    event_ids:
+      - "family_dinner"     # (Using this as a shared flatmate dinner)
+      - "night_out_drinks"
+      - "shared_movie_night"
+      - "weekend_deep_clean"

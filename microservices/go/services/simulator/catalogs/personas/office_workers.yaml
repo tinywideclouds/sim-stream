@@ -8,15 +8,31 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "23:00"
-        buffer_duration: "7h30m"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "7h30m"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects: 
+            energy: { amount: 80.0, over: "7h30m", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away" 
         anchor_time: "08:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "9h", std_dev: "10m" }
-          modifiers: { energy: -40.0, hunger: -50.0, hygiene: -15.0, leisure: -20.0 }
+        gravity: 0.9
+        duration: 
+          type: 1 
+          mean: "9h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects: 
+            energy: { amount: -40.0, over: "9h", curve: "linear" }
+            hunger: { amount: -50.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -15.0, over: "9h", curve: "linear" }
+            leisure: { amount: -20.0, over: "9h", curve: "linear" }
 
   - id: "office_long_commute"
     type: "adult"
@@ -26,15 +42,31 @@ personas:
       - phase_id: "early_sleep"
         type: "sleep"
         anchor_time: "22:00"
-        buffer_duration: "7h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "7h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "11h", std_dev: "30m" }
-          modifiers: { energy: -65.0, hunger: -70.0, hygiene: -25.0, leisure: -40.0 }
+        gravity: 0.95
+        duration: 
+          type: 1 
+          mean: "11h"
+          std_dev: "30m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects: 
+            energy: { amount: -65.0, over: "11h", curve: "linear" }
+            hunger: { amount: -70.0, over: "11h", curve: "linear" }
+            hygiene: { amount: -25.0, over: "11h", curve: "linear" }
+            leisure: { amount: -40.0, over: "11h", curve: "linear" }
 
   - id: "office_night_shift"
     type: "adult"
@@ -44,15 +76,31 @@ personas:
       - phase_id: "day_sleep"
         type: "sleep"
         anchor_time: "08:00"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "21:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "9h", std_dev: "15m" }
-          modifiers: { energy: -50.0, hunger: -50.0, hygiene: -20.0, leisure: -20.0 }
+        gravity: 0.9
+        duration:
+          type: 1
+          mean: "9h"
+          std_dev: "15m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -50.0, over: "9h", curve: "linear" }
+            hunger: { amount: -50.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -20.0, over: "9h", curve: "linear" }
+            leisure: { amount: -20.0, over: "9h", curve: "linear" }
 
   - id: "office_gym_goer"
     type: "adult"
@@ -62,15 +110,31 @@ personas:
       - phase_id: "strict_sleep"
         type: "sleep"
         anchor_time: "22:30"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 85.0, over: "8h", curve: "front_loaded" }
       - phase_id: "work_shift_and_gym"
         type: "away"
         anchor_time: "08:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "10h30m", std_dev: "20m" }
-          modifiers: { energy: -70.0, hunger: -80.0, hygiene: -80.0, leisure: 10.0 }
+        gravity: 0.9
+        duration:
+          type: 1
+          mean: "10h30m"
+          std_dev: "20m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -70.0, over: "10h30m", curve: "linear" }
+            hunger: { amount: -80.0, over: "10h30m", curve: "linear" }
+            hygiene: { amount: -80.0, over: "10h30m", curve: "linear" }
+            leisure: { amount: 10.0, over: "10h30m", curve: "linear" }
 
   - id: "office_socialite"
     type: "adult"
@@ -80,15 +144,31 @@ personas:
       - phase_id: "late_sleep"
         type: "sleep"
         anchor_time: "00:30"
-        buffer_duration: "6h30m"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "6h30m"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 70.0, over: "6h30m", curve: "front_loaded" }
       - phase_id: "work_and_drinks"
         type: "away"
         anchor_time: "09:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "11h", std_dev: "60m" }
-          modifiers: { energy: -50.0, hunger: -10.0, hygiene: -20.0, leisure: 50.0 }
+        gravity: 0.7
+        duration:
+          type: 1
+          mean: "11h"
+          std_dev: "60m"
+          flexibility: "1h"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -50.0, over: "11h", curve: "linear" }
+            hunger: { amount: -10.0, over: "11h", curve: "linear" }
+            hygiene: { amount: -20.0, over: "11h", curve: "linear" }
+            leisure: { amount: 50.0, over: "11h", curve: "linear" }
 
   - id: "office_executive"
     type: "adult"
@@ -98,15 +178,31 @@ personas:
       - phase_id: "short_sleep"
         type: "sleep"
         anchor_time: "23:30"
-        buffer_duration: "6h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "6h"
+          flexibility: "1h30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "10h", std_dev: "15m" }
-          modifiers: { energy: -80.0, hunger: -60.0, hygiene: -20.0, leisure: -50.0 }
+        gravity: 0.95
+        duration:
+          type: 1
+          mean: "10h"
+          std_dev: "15m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -80.0, over: "10h", curve: "linear" }
+            hunger: { amount: -60.0, over: "10h", curve: "linear" }
+            hygiene: { amount: -20.0, over: "10h", curve: "linear" }
+            leisure: { amount: -50.0, over: "10h", curve: "linear" }
 
   - id: "office_part_timer_morning"
     type: "adult"
@@ -116,15 +212,31 @@ personas:
       - phase_id: "long_sleep"
         type: "sleep"
         anchor_time: "23:00"
-        buffer_duration: "8h30m"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h30m"
+          flexibility: "2h30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 90.0, over: "8h30m", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "4h", std_dev: "10m" }
-          modifiers: { energy: -20.0, hunger: -30.0, hygiene: -10.0, leisure: -10.0 }
+        gravity: 0.8
+        duration:
+          type: 1
+          mean: "4h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -20.0, over: "4h", curve: "linear" }
+            hunger: { amount: -30.0, over: "4h", curve: "linear" }
+            hygiene: { amount: -10.0, over: "4h", curve: "linear" }
+            leisure: { amount: -10.0, over: "4h", curve: "linear" }
 
   - id: "office_part_timer_afternoon"
     type: "adult"
@@ -134,15 +246,31 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "00:00"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "13:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "5h", std_dev: "10m" }
-          modifiers: { energy: -25.0, hunger: -30.0, hygiene: -10.0, leisure: -15.0 }
+        gravity: 0.8
+        duration:
+          type: 1
+          mean: "5h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -25.0, over: "5h", curve: "linear" }
+            hunger: { amount: -30.0, over: "5h", curve: "linear" }
+            hygiene: { amount: -10.0, over: "5h", curve: "linear" }
+            leisure: { amount: -15.0, over: "5h", curve: "linear" }
 
   - id: "office_slacker"
     type: "adult"
@@ -152,15 +280,31 @@ personas:
       - phase_id: "late_sleep"
         type: "sleep"
         anchor_time: "01:00"
-        buffer_duration: "7h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "7h"
+          flexibility: "2h30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "7h", std_dev: "45m" }
-          modifiers: { energy: -20.0, hunger: -40.0, hygiene: -10.0, leisure: 10.0 }
+        gravity: 0.7
+        duration:
+          type: 1
+          mean: "7h"
+          std_dev: "45m"
+          flexibility: "1h"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -20.0, over: "7h", curve: "linear" }
+            hunger: { amount: -40.0, over: "7h", curve: "linear" }
+            hygiene: { amount: -10.0, over: "7h", curve: "linear" }
+            leisure: { amount: 10.0, over: "7h", curve: "linear" }
 
   - id: "office_early_bird"
     type: "adult"
@@ -170,12 +314,28 @@ personas:
       - phase_id: "early_sleep"
         type: "sleep"
         anchor_time: "21:30"
-        buffer_duration: "7h"
-        away_profile: null
+        gravity: 0.2
+        duration:
+          type: 3
+          value: "7h"
+          flexibility: "1h30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "7h", curve: "front_loaded" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "06:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "8h30m", std_dev: "10m" }
-          modifiers: { energy: -40.0, hunger: -50.0, hygiene: -15.0, leisure: -20.0 }
+        gravity: 0.95
+        duration:
+          type: 1
+          mean: "8h30m"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -40.0, over: "8h30m", curve: "linear" }
+            hunger: { amount: -50.0, over: "8h30m", curve: "linear" }
+            hygiene: { amount: -15.0, over: "8h30m", curve: "linear" }
+            leisure: { amount: -20.0, over: "8h30m", curve: "linear" }

@@ -1,8 +1,8 @@
 // domain/actor.go
 package domain
 
-// ActorTemplate defines the human or system entity living in the simulation.
-type ActorTemplate struct {
+// Actor defines the human or system entity living in the simulation.
+type Actor struct {
 	ActorID string `yaml:"actor_id"`
 	Type    string `yaml:"type"` // "adult", "child", "system"
 
@@ -27,5 +27,5 @@ type ActorTemplate struct {
 	// Stable State (Societal Rails)
 	// ----------------------------------------------------
 	// Phases define the macro-blocks the actor is expected to follow.
-	Phases []DailyPhase `yaml:"phases"`
+	Phases []Phase `yaml:"phases"`
 }

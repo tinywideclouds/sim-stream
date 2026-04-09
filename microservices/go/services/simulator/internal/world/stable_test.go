@@ -1,7 +1,6 @@
 package world_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -16,13 +15,16 @@ import (
 type MockCalendar struct{}
 
 func (m *MockCalendar) GetDayType(date time.Time) string { return "workday" }
+func (m *MockCalendar) IsHoliday(date time.Time) bool    { return false }
 
 type MockUtility struct {
 	canAfford bool
 }
 
 func (m *MockUtility) ResetMeters(actorID string, starting map[string]float64) {}
-func (m *MockUtility) ApplyModifiersToMeters(actorID string, mods map[string]float64, limits map[string]float64) {
+
+// UPDATED: Now matches the new ContinuousEffect interface
+func (m *MockUtility) ApplyModifiersToMeters(actorID string, mods map[string]domain.ContinuousEffect, limits map[string]float64) {
 }
 func (m *MockUtility) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tick time.Duration) ([]string, []string, []string) {
 	return nil, nil, nil
@@ -35,9 +37,11 @@ func (m *MockUtility) GetActionUrgency(actorID string, actionID string, state *e
 	return 0.5 // Neutral tension -> ensures 0 shift for deterministic tests
 }
 func (m *MockUtility) GetActorSnapshot(actorID string) parsers.StateSnapshot {
-	return make(parsers.StateSnapshot)
+	return parsers.StateSnapshot{"actor.energy": 50.0} // Neutral energy urgency
 }
-func (m *MockUtility) ForceTask(actorID string, actionID string, duration time.Duration, state *engine.SimulationState) {
+
+// UPDATED: Now accepts the ActionFill map
+func (m *MockUtility) ForceTask(actorID string, actionID string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
 }
 
 type MockRoutine struct {
@@ -58,7 +62,7 @@ func (m *MockRoutine) AbortRoutine(actorID string) {}
 
 func TestStableEngine_Arbitration_Success(t *testing.T) {
 	blueprint := &domain.NodeArchetype{
-		Actors: []domain.ActorTemplate{{ActorID: "parent", AIModel: "stable"}},
+		Actors: []domain.Actor{{ActorID: "parent", AIModel: "stable"}},
 		Actions: []domain.ActionTemplate{
 			{ActionID: "cook_dinner", Costs: map[string]float64{"energy": 25.0}},
 		},
@@ -83,7 +87,7 @@ func TestStableEngine_Arbitration_Success(t *testing.T) {
 
 func TestStableEngine_Arbitration_Failure(t *testing.T) {
 	blueprint := &domain.NodeArchetype{
-		Actors: []domain.ActorTemplate{{ActorID: "exhausted_parent", AIModel: "stable"}},
+		Actors: []domain.Actor{{ActorID: "exhausted_parent", AIModel: "stable"}},
 		Actions: []domain.ActionTemplate{
 			{ActionID: "cook_dinner", Costs: map[string]float64{"energy": 25.0}},
 		},
@@ -118,17 +122,17 @@ func TestStableEngine_Arbitration_Failure(t *testing.T) {
 
 func TestStableEngine_AwayGhosting(t *testing.T) {
 	blueprint := &domain.NodeArchetype{
-		Actors: []domain.ActorTemplate{
+		Actors: []domain.Actor{
 			{
 				ActorID: "office_worker",
 				AIModel: "stable",
-				Phases: []domain.DailyPhase{
+				Phases: []domain.Phase{
 					{
 						PhaseID:    "work_shift",
 						AnchorTime: "08:30",
-						Type:       domain.PhaseTypeAway,
-						AwayProfile: &domain.AwayProfile{
-							Duration: domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "8h"},
+						Type:       "away",
+						Duration: domain.PhaseDuration{
+							ProbabilityDistribution: domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "8h"},
 						},
 					},
 				},
@@ -157,16 +161,19 @@ func TestStableEngine_AwayGhosting(t *testing.T) {
 
 func TestStableEngine_SleepGhosting(t *testing.T) {
 	blueprint := &domain.NodeArchetype{
-		Actors: []domain.ActorTemplate{
+		Actors: []domain.Actor{
 			{
 				ActorID: "tired_child",
 				AIModel: "stable",
-				Phases: []domain.DailyPhase{
+				Phases: []domain.Phase{
 					{
-						PhaseID:        "night_sleep",
-						AnchorTime:     "20:00",
-						Type:           domain.PhaseTypeSleep,
-						BufferDuration: "10h",
+						PhaseID:    "night_sleep",
+						AnchorTime: "20:00",
+						Type:       "sleep",
+						Duration: domain.PhaseDuration{
+							ProbabilityDistribution: domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "10h"},
+							Flexibility:             2 * time.Hour,
+						},
 					},
 				},
 			},
@@ -189,5 +196,49 @@ func TestStableEngine_SleepGhosting(t *testing.T) {
 	ledger := state.Actors["tired_child"]
 	if ledger.CurrentState != domain.ActorStateAsleep {
 		t.Errorf("Expected actor to be Asleep, got %v", ledger.CurrentState)
+	}
+}
+
+// --- NEW TEST ---
+func TestCalculatePhaseTimes_Sleep(t *testing.T) {
+	se := world.NewStableEngine(&MockUtility{}, &MockRoutine{}, &MockCalendar{}, generator.NewSampler([32]byte{}))
+
+	state := &engine.SimulationState{
+		SimTime: time.Date(2026, 1, 1, 22, 0, 0, 0, time.UTC),
+		Blueprint: &domain.NodeArchetype{
+			Meters: []domain.MeterTemplate{{MeterID: "energy", Max: 100.0}},
+		},
+	}
+
+	actor := domain.Actor{
+		ActorID: "test_actor",
+		Phases: []domain.Phase{
+			{Type: "away"}, // Creates the workday wall
+		},
+	}
+
+	phase := domain.Phase{
+		Type:       "sleep",
+		AnchorTime: "23:00",
+		Duration: domain.PhaseDuration{
+			ProbabilityDistribution: domain.ProbabilityDistribution{
+				Type:  domain.DistributionTypeConstant,
+				Value: "8h",
+			},
+			Flexibility: 2 * time.Hour,
+		},
+	}
+
+	start, end := se.CalculatePhaseTimes(actor, phase, state, "workday")
+
+	// Urgency is 0.5 (neutral from MockUtility), so factor is 0, shifts should be 0
+	expectedStart := time.Date(2026, 1, 1, 23, 0, 0, 0, time.UTC)
+	expectedEnd := expectedStart.Add(8 * time.Hour)
+
+	if !start.Equal(expectedStart) {
+		t.Errorf("Expected start %v, got %v", expectedStart, start)
+	}
+	if !end.Equal(expectedEnd) {
+		t.Errorf("Expected end %v, got %v", expectedEnd, end)
 	}
 }

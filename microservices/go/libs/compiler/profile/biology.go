@@ -6,10 +6,10 @@ import (
 )
 
 const (
-	BaseEnergyDecay   = 6.0
-	BaseHungerDecay   = 8.0
-	BaseHygieneDecay  = 5.0
-	EnergyPerREMCycle = 20.0
+	BaseEnergyDecay    = 6.0
+	BaseHungerDecay    = 8.0
+	BaseHygieneDecay   = 5.0
+	EnergyPerREMCycle  = 20.0
 	LeisurePerREMCycle = 15.0
 )
 
@@ -20,14 +20,14 @@ func GenerateBiology(intent PersonaIntent) ([]domain.MeterTemplate, domain.Actio
 		{MeterID: "hygiene", Max: 100.0, BaseDecayPerHour: BaseHygieneDecay, Curve: "s_curve"},
 	}
 
-	daylightSuppression := domain.UtilityBonusCurve{
+	daylightSuppression := domain.BonusCurve{
 		ContextKey: "time.hour_float",
-		Peak:       16.0,  // 3:00 PM
-		Width:      5.0,   // Suppresses from roughly 11:00 AM to 9:00 PM
-		Magnitude:  -50.0, 
+		Peak:       16.0, // 3:00 PM
+		Width:      5.0,  // Suppresses from roughly 11:00 AM to 9:00 PM
+		Magnitude:  -50.0,
 	}
 
-	timeForBed := domain.UtilityBonusCurve{
+	timeForBed := domain.BonusCurve{
 		ContextKey: "time.hour_float",
 		Peak:       2.0,
 		Width:      5.0,
@@ -37,7 +37,7 @@ func GenerateBiology(intent PersonaIntent) ([]domain.MeterTemplate, domain.Actio
 	sleepAction := domain.ActionTemplate{
 		ActionID:      "sleep_in_bed",
 		Interruptible: true,
-		// THE NEW INERTIA: It costs 15 points just to decide to go to bed.
+		// INERTIA: It costs 15 points just to decide to go to bed.
 		// If they wake up in the middle of the night, this penalty vanishes if they stay in bed!
 		InitiationFriction: 15.0,
 		Satisfies: map[string]domain.ActionFill{
@@ -50,13 +50,13 @@ func GenerateBiology(intent PersonaIntent) ([]domain.MeterTemplate, domain.Actio
 				Curve:  "linear",
 			},
 		},
-		 
+
 		Duration: domain.ProbabilityDistribution{
 			Type:   domain.DistributionTypeNormal,
 			Mean:   "90m",
 			StdDev: "15m",
 		},
-		BonusCurves: []domain.UtilityBonusCurve{
+		BonusCurves: []domain.BonusCurve{
 			daylightSuppression,
 			timeForBed,
 		},

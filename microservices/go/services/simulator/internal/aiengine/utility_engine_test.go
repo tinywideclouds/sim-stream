@@ -13,7 +13,7 @@ import (
 func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
 	// Setup minimalist blueprint
 	blueprint := &domain.NodeArchetype{
-		Actors: []domain.ActorTemplate{
+		Actors: []domain.Actor{
 			{
 				ActorID: "test_actor",
 				AIModel: "stable",
@@ -31,8 +31,8 @@ func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
 	// Trigger initial map population
 	utilityEngine.Process(state, nil, 1*time.Minute)
 
-	// 1. Test Modifiers (Re-entry simulation)
-	modifiers := map[string]float64{"energy": -40.0}
+	// 1. Test Modifiers (Re-entry simulation) - UPDATED TO CONTINUOUS EFFECT
+	modifiers := map[string]domain.ContinuousEffect{"energy": {Amount: -40.0}}
 	limits := map[string]float64{"energy": 100.0}
 
 	utilityEngine.ApplyModifiersToMeters("test_actor", modifiers, limits)
@@ -69,7 +69,7 @@ func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 				Duration: domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "45m"},
 			},
 		},
-		Actors: []domain.ActorTemplate{
+		Actors: []domain.Actor{
 			{
 				ActorID: "wfh_worker",
 				Type:    "adult",
@@ -113,7 +113,7 @@ func TestUtilityEngine_GetActionUrgency(t *testing.T) {
 				},
 			},
 		},
-		Actors: []domain.ActorTemplate{
+		Actors: []domain.Actor{
 			{ActorID: "hungry_actor", AIModel: "stable"},
 			{ActorID: "full_actor", AIModel: "stable"},
 		},
@@ -171,12 +171,13 @@ func TestUtilityEngine_GetActorSnapshot(t *testing.T) {
 	}
 }
 
+// --- UPDATED FOR NEW SIGNATURE ---
 func TestUtilityEngine_ForceTask(t *testing.T) {
 	sampler := generator.NewSampler([32]byte{})
 	ue := NewUtilityEngine(sampler)
 
 	blueprint := &domain.NodeArchetype{
-		Actors: []domain.ActorTemplate{
+		Actors: []domain.Actor{
 			{ActorID: "actor1", StartingMeters: map[string]float64{"energy": 50.0}},
 		},
 		Meters: []domain.MeterTemplate{
@@ -199,7 +200,12 @@ func TestUtilityEngine_ForceTask(t *testing.T) {
 	ue.ResetMeters("actor1", blueprint.Actors[0].StartingMeters)
 
 	sleepDuration := 8 * time.Hour
-	ue.ForceTask("actor1", "night_sleep", sleepDuration, state)
+	// Note: We supply the map directly, avoiding reliance on looking it up from engine state
+	satisfies := map[string]domain.ActionFill{
+		"energy": {Amount: 50.0, Curve: "linear"},
+	}
+
+	ue.ForceTask("actor1", "night_sleep", sleepDuration, state.SimTime, satisfies)
 
 	tickDuration := 1 * time.Minute
 	state.SimTime = state.SimTime.Add(tickDuration)

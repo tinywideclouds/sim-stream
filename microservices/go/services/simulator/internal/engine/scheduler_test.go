@@ -20,7 +20,7 @@ func TestScheduler_ScheduleDay(t *testing.T) {
 	scheduler := engine.NewScheduler(sampler)
 
 	// Mock an actor with a fuzzy morning routine
-	actor := domain.ActorTemplate{
+	actor := domain.Actor{
 		ActorID: "parent_1",
 		Routines: []domain.ActorRoutine{
 			{

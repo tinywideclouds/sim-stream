@@ -51,7 +51,7 @@ func TestExecutor_AdvanceRoutine_Abort(t *testing.T) {
 				},
 			},
 		},
-		Actors: []domain.ActorTemplate{{ActorID: "teenager_1"}},
+		Actors: []domain.Actor{{ActorID: "teenager_1"}},
 		Devices: []domain.DeviceTemplate{
 			{DeviceID: "shower_1"},
 			{DeviceID: "toaster_1"},

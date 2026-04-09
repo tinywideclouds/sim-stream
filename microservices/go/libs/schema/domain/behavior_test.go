@@ -11,7 +11,7 @@ import (
 // TestWrapper is used to unmarshal the top-level YAML lists for testing.
 type TestWrapper struct {
 	RoutineTemplates []RoutineTemplate `yaml:"routine_templates"`
-	Actors           []ActorTemplate   `yaml:"actors"`
+	Actors           []Actor           `yaml:"actors"`
 	CollectiveEvents []CollectiveEvent `yaml:"collective_events"`
 	Meters           []MeterTemplate   `yaml:"meters"`
 	Actions          []ActionTemplate  `yaml:"actions"`

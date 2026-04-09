@@ -26,7 +26,7 @@ func NewScheduler(sampler *generator.Sampler) *Scheduler {
 }
 
 // ScheduleDay calculates the baseline start and deadline times.
-func (s *Scheduler) ScheduleDay(actor domain.ActorTemplate, baseDate time.Time, snap parsers.StateSnapshot) ([]ScheduledRoutine, error) {
+func (s *Scheduler) ScheduleDay(actor domain.Actor, baseDate time.Time, snap parsers.StateSnapshot) ([]ScheduledRoutine, error) {
 	var schedules []ScheduledRoutine
 
 	for _, r := range actor.Routines {

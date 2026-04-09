@@ -8,15 +8,34 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "20:30"
-        buffer_duration: "10h"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "10h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 90.0, over: "10h", curve: "front_loaded" }
+            hunger: { amount: -50.0, over: "10h", curve: "linear" }
+            hygiene: { amount: -50.0, over: "10h", curve: "linear" }
+            leisure: { amount: 10.0, over: "10h", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "7h", std_dev: "10m" }
-          modifiers: { energy: -50.0, hunger: -70.0, hygiene: -30.0, leisure: -10.0 }
+        gravity: 0.9
+        duration: 
+          type: 1 
+          mean: "7h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects: 
+            energy: { amount: -50.0, over: "7h", curve: "linear" }
+            hunger: { amount: -70.0, over: "7h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "7h", curve: "linear" }
+            leisure: { amount: -10.0, over: "7h", curve: "linear" }
 
   - id: "child_sports_club"
     type: "child"
@@ -26,15 +45,31 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "21:00"
-        buffer_duration: "9h30m"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "9h30m"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 85.0, over: "9h30m", curve: "front_loaded" }
       - phase_id: "school_and_sports"
         type: "away"
         anchor_time: "08:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "9h", std_dev: "20m" } 
-          modifiers: { energy: -80.0, hunger: -90.0, hygiene: -80.0, leisure: 20.0 } 
+        gravity: 0.95
+        duration:
+          type: 1
+          mean: "9h"
+          std_dev: "20m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -80.0, over: "9h", curve: "linear" }
+            hunger: { amount: -90.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -80.0, over: "9h", curve: "linear" }
+            leisure: { amount: 20.0, over: "9h", curve: "linear" }
 
   - id: "child_gamer"
     type: "child"
@@ -44,15 +79,34 @@ personas:
       - phase_id: "late_sleep"
         type: "sleep"
         anchor_time: "23:00"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 75.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -20.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "8h", curve: "linear" }
+            leisure: { amount: +20.0, over: "8h", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "7h", std_dev: "10m" }
-          modifiers: { energy: -40.0, hunger: -60.0, hygiene: -20.0, leisure: -50.0 }
+        gravity: 0.85
+        duration:
+          type: 1
+          mean: "7h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -40.0, over: "7h", curve: "linear" }
+            hunger: { amount: -60.0, over: "7h", curve: "linear" }
+            hygiene: { amount: -20.0, over: "7h", curve: "linear" }
+            leisure: { amount: -50.0, over: "7h", curve: "linear" }
 
   - id: "child_toddler"
     type: "child"
@@ -62,20 +116,46 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "19:00"
-        buffer_duration: "12h"
-        away_profile: null
+        gravity: 0.3
+        duration:
+          type: 3
+          value: "12h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "12h", curve: "front_loaded" }
       - phase_id: "afternoon_nap"
         type: "sleep"
         anchor_time: "13:00"
-        buffer_duration: "2h"
-        away_profile: null
+        gravity: 0.6
+        duration:
+          type: 3
+          value: "2h"
+          flexibility: "1h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 30.0, over: "2h", curve: "linear" }
+            hunger: { amount: -10.0, over: "2h", curve: "linear" }
+            hygiene: { amount: -10.0, over: "2h", curve: "linear" }
+            leisure: { amount: 2.0, over: "2h", curve: "linear" }
       - phase_id: "daycare"
         type: "away"
         anchor_time: "09:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "6h", std_dev: "30m" }
-          modifiers: { energy: -70.0, hunger: -50.0, hygiene: -50.0, leisure: 0.0 }
+        gravity: 0.8
+        duration: 
+          type: 1 
+          mean: "6h"
+          std_dev: "30m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects: 
+            energy: { amount: -70.0, over: "6h", curve: "linear" }
+            hunger: { amount: -50.0, over: "6h", curve: "linear" }
+            hygiene: { amount: -50.0, over: "6h", curve: "linear" }
+            leisure: { amount: 10.0, over: "6h", curve: "linear" }
 
   - id: "child_teen_rebel"
     type: "child"
@@ -85,15 +165,34 @@ personas:
       - phase_id: "erratic_sleep"
         type: "sleep"
         anchor_time: "01:00"
-        buffer_duration: "6h30m"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "6h30m"
+          flexibility: "4h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 65.0, over: "6h30m", curve: "front_loaded" }
+            hunger: { amount: -40.0, over: "6h30m", curve: "linear" }
+            hygiene: { amount: -40.0, over: "6h30m", curve: "linear" }
+            leisure: { amount: 10.0, over: "6h30m", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:45" 
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "7h", std_dev: "30m" }
-          modifiers: { energy: -60.0, hunger: -60.0, hygiene: -20.0, leisure: -20.0 }
+        gravity: 0.8
+        duration:
+          type: 1
+          mean: "7h"
+          std_dev: "30m"
+          flexibility: "1h"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -60.0, over: "7h", curve: "linear" }
+            hunger: { amount: -60.0, over: "7h", curve: "linear" }
+            hygiene: { amount: -20.0, over: "7h", curve: "linear" }
+            leisure: { amount: -20.0, over: "7h", curve: "linear" }
 
   - id: "child_early_riser"
     type: "child"
@@ -103,15 +202,34 @@ personas:
       - phase_id: "early_sleep"
         type: "sleep"
         anchor_time: "20:00"
-        buffer_duration: "9h"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "9h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 85.0, over: "9h", curve: "front_loaded" }
+            hunger: { amount: -20.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: 20.0, over: "9h", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:00"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "7h", std_dev: "10m" }
-          modifiers: { energy: -50.0, hunger: -60.0, hygiene: -30.0, leisure: -10.0 }
+        gravity: 0.9
+        duration:
+          type: 1
+          mean: "7h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -50.0, over: "7h", curve: "linear" }
+            hunger: { amount: -60.0, over: "7h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "7h", curve: "linear" }
+            leisure: { amount: -10.0, over: "7h", curve: "linear" }
 
   - id: "child_after_school_club"
     type: "child"
@@ -121,15 +239,34 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "21:30"
-        buffer_duration: "9h"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "9h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "9h", curve: "front_loaded" }
+            hunger: { amount: -20.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "school_extended"
         type: "away"
         anchor_time: "08:15"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "8h30m", std_dev: "15m" }
-          modifiers: { energy: -60.0, hunger: -75.0, hygiene: -40.0, leisure: -5.0 }
+        gravity: 0.95
+        duration:
+          type: 1
+          mean: "8h30m"
+          std_dev: "15m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -60.0, over: "8h30m", curve: "linear" }
+            hunger: { amount: -75.0, over: "8h30m", curve: "linear" }
+            hygiene: { amount: -40.0, over: "8h30m", curve: "linear" }
+            leisure: { amount: -5.0, over: "8h30m", curve: "linear" }
 
   - id: "child_home_schooled"
     type: "child"
@@ -139,8 +276,15 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "21:00"
-        buffer_duration: "10h"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "10h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 90.0, over: "10h", curve: "front_loaded" }
 
   - id: "child_tv_addict"
     type: "child"
@@ -150,15 +294,34 @@ personas:
       - phase_id: "late_sleep"
         type: "sleep"
         anchor_time: "22:30"
-        buffer_duration: "8h"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "8h"
+          flexibility: "3h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 75.0, over: "8h", curve: "front_loaded" }
+            hunger: { amount: -20.0, over: "8h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "8h", curve: "linear" }
+            leisure: { amount: +20.0, over: "8h", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "7h", std_dev: "10m" }
-          modifiers: { energy: -40.0, hunger: -60.0, hygiene: -20.0, leisure: -60.0 }
+        gravity: 0.9
+        duration:
+          type: 1
+          mean: "7h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -40.0, over: "7h", curve: "linear" }
+            hunger: { amount: -60.0, over: "7h", curve: "linear" }
+            hygiene: { amount: -20.0, over: "7h", curve: "linear" }
+            leisure: { amount: -60.0, over: "7h", curve: "linear" }
 
   - id: "child_messy"
     type: "child"
@@ -168,12 +331,31 @@ personas:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "21:00"
-        buffer_duration: "9h"
-        away_profile: null
+        gravity: 0.1
+        duration:
+          type: 3
+          value: "9h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: 80.0, over: "9h", curve: "front_loaded" }
+            hunger: { amount: -20.0, over: "9h", curve: "linear" }
+            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
+            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:30"
-        buffer_duration: "30m"
-        away_profile:
-          duration: { type: 1, mean: "7h", std_dev: "10m" }
-          modifiers: { energy: -50.0, hunger: -60.0, hygiene: -80.0, leisure: -10.0 }
+        gravity: 0.9
+        duration:
+          type: 1
+          mean: "7h"
+          std_dev: "10m"
+          flexibility: "30m"
+        modifiers:
+          application: "block_end"
+          effects:
+            energy: { amount: -50.0, over: "7h", curve: "linear" }
+            hunger: { amount: -60.0, over: "7h", curve: "linear" }
+            hygiene: { amount: -80.0, over: "7h", curve: "linear" }
+            leisure: { amount: -10.0, over: "7h", curve: "linear" }

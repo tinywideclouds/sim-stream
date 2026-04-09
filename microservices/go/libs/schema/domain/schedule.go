@@ -1,6 +1,8 @@
 // domain/schedule.go
 package domain
 
+import "time"
+
 // PhaseType defines the macro-state of the actor during a specific block of the day.
 type PhaseType string
 
@@ -10,19 +12,38 @@ const (
 	PhaseTypeSleep PhaseType = "sleep"
 )
 
-// DailyPhase represents a societal macro-block (the "Rails").
-type DailyPhase struct {
-	PhaseID        string       `yaml:"phase_id"`
-	AnchorTime     string       `yaml:"anchor_time"`     // e.g., "07:00"
-	BufferDuration string       `yaml:"buffer_duration"` // e.g., "30m"
-	Type           PhaseType    `yaml:"type"`            // "home", "away", "sleep"
-	AwayProfile    *AwayProfile `yaml:"away_profile"`    // Only used if Type == "away"
+// Phase replaces your old DailyPhase.
+type Phase struct {
+	PhaseID    string         `yaml:"phase_id"`
+	Type       string         `yaml:"type"`
+	AnchorTime string         `yaml:"anchor_time"`
+	Gravity    float64        `yaml:"gravity"`
+	Duration   PhaseDuration  `yaml:"duration"`
+	Modifiers  PhaseModifiers `yaml:"modifiers"`
 }
 
-// AwayProfile dictates the fuzzy duration and re-entry state for out-of-house blocks.
-type AwayProfile struct {
-	Duration  ProbabilityDistribution `yaml:"duration"`
-	Modifiers map[string]float64      `yaml:"modifiers"` // Flat shifts to meters on return, e.g., "energy": -40.0
+// PhaseDuration embeds your existing ProbabilityDistribution from behavior.go
+type PhaseDuration struct {
+	ProbabilityDistribution `yaml:",inline"`
+	Flexibility             time.Duration `yaml:"flexibility"` // Automatically parsed from "2h"
+}
+
+type PhaseModifierType string
+
+const (
+	Continuous PhaseModifierType = "continuous"
+	BlockEnd   PhaseModifierType = "block_end"
+)
+
+type PhaseModifiers struct {
+	Application string                      `yaml:"application"` // "continuous" or "block_end"
+	Effects     map[string]ContinuousEffect `yaml:"effects"`
+}
+
+type ContinuousEffect struct {
+	Amount float64       `yaml:"amount"`
+	Over   time.Duration `yaml:"over"`  // e.g. "8h"
+	Curve  string        `yaml:"curve"` // e.g. "front_loaded"
 }
 
 // CalendarEvent defines overriding days (holidays, weekends) loaded from localized files.
