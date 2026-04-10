@@ -13,6 +13,7 @@
 /yarn.lock
 
 /microservices/go/services/simulator/setup/bulk/
+/microservices/go/services/simulator/setup/bulk_bk/
 /microservices/go/services/simulator/results/test_batch/
 
 # Environment files

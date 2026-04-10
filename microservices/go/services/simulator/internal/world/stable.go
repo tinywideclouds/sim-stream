@@ -41,7 +41,7 @@ type StableEngine struct {
 
 	Burnout        map[string]float64
 	activePhase    map[string]string
-	pendingReEntry map[string]domain.PhaseModifiers
+	pendingReentry map[string]domain.PhaseModifiers
 }
 
 func NewStableEngine(utility UtilityBrain, routine RoutineBrain, cal CalendarProvider, samp *generator.Sampler) *StableEngine {
@@ -52,7 +52,7 @@ func NewStableEngine(utility UtilityBrain, routine RoutineBrain, cal CalendarPro
 		sampler:        samp,
 		Burnout:        make(map[string]float64),
 		activePhase:    make(map[string]string),
-		pendingReEntry: make(map[string]domain.PhaseModifiers),
+		pendingReentry: make(map[string]domain.PhaseModifiers),
 	}
 }
 
@@ -218,7 +218,7 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 			se.routineBrain.AbortRoutine(actor.ActorID)
 			ledger.CurrentState = domain.ActorStateHomeFree
 			ledger.StateEndsAt = state.SimTime
-			delete(se.pendingReEntry, actor.ActorID)
+			delete(se.pendingReentry, actor.ActorID)
 			continue
 		}
 
@@ -228,7 +228,7 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 			}
 
 			if ledger.CurrentState == domain.ActorStateAway {
-				if mods, exists := se.pendingReEntry[actor.ActorID]; exists && mods.Application == "block_end" {
+				if mods, exists := se.pendingReentry[actor.ActorID]; exists && mods.Application == "block_end" {
 					limits := make(map[string]float64)
 					for _, m := range state.Blueprint.Meters {
 						if m.Max > 0 {
@@ -241,10 +241,27 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 				}
 			}
 
+			// --- THE NEW STATE LOGGING ---
+			snap := se.utilityBrain.GetActorSnapshot(actor.ActorID)
+			var metrics string
+			for k, v := range snap {
+				if val, ok := v.(float64); ok {
+					// strip "actor." prefix for cleaner logs
+					metrics += fmt.Sprintf("%s:%.1f ", k[6:], val)
+				}
+			}
+
+			switch ledger.CurrentState {
+			case domain.ActorStateAsleep:
+				slog.Info("ACTOR WOKE UP", "actor", actor.ActorID, "time", state.SimTime.Format(hourMinute), "state", metrics)
+			case domain.ActorStateAway:
+				slog.Info("ACTOR RETURNED HOME", "actor", actor.ActorID, "time", state.SimTime.Format(hourMinute), "state", metrics)
+			}
+			// -----------------------------
 			slog.Info("PHASE COMPLETED", "actor", actor.ActorID, "state", ledger.CurrentState, "return_time", state.SimTime.Format(hourMinute))
 
 			ledger.CurrentState = domain.ActorStateHomeFree
-			delete(se.pendingReEntry, actor.ActorID)
+			delete(se.pendingReentry, actor.ActorID)
 			delete(se.activePhase, actor.ActorID)
 		}
 
@@ -269,20 +286,11 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 					}
 
 					if phase.Type == "away" && dayType == "workday" {
-						slog.Info("AWAY ENGAGED (Linear Spring)",
-							"actor", actor.ActorID,
-							"phase", phase.PhaseID,
-							"target_leave", actualStart.Add(-startShift).Format(hourMinute),
-							"actual_leave", actualStart.Format(hourMinute),
-							"leave_shift", startShift.String(),
-							"target_return", actualEnd.Add(-endShift).Format(hourMinute),
-							"actual_return", actualEnd.Format(hourMinute),
-							"return_shift", endShift.String(),
-						)
+						slog.Info("AWAY ENGAGED", "actor", actor.ActorID, "phase", phase.PhaseID, "start", startShift, "leave", actualStart.Format(hourMinute), "end", endShift, "return", actualEnd.Format(hourMinute))
 
 						ledger.CurrentState = domain.ActorStateAway
 						se.activePhase[actor.ActorID] = phase.PhaseID
-						se.pendingReEntry[actor.ActorID] = phase.Modifiers
+						se.pendingReentry[actor.ActorID] = phase.Modifiers
 						ledger.StateEndsAt = state.SimTime.Add(remainingDuration)
 
 						satisfies := make(map[string]domain.ActionFill)
@@ -296,16 +304,36 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 						onMacroRail = true
 						break
 
+					} else if phase.Type == "wfh" && dayType == "workday" {
+						slog.Info("WFH SHIFT ENGAGED", "actor", actor.ActorID, "phase", phase.PhaseID, "start", actualStart.Format(hourMinute), "end", actualEnd.Format(hourMinute))
+
+						// They stay HomeFree, but we lock them into the active phase to prevent them from wandering
+						se.activePhase[actor.ActorID] = phase.PhaseID
+						se.pendingReentry[actor.ActorID] = phase.Modifiers
+
+						satisfies := make(map[string]domain.ActionFill)
+						if phase.Modifiers.Application == "continuous" {
+							for m, eff := range phase.Modifiers.Effects {
+								satisfies[m] = domain.ActionFill{Amount: eff.Amount, Curve: eff.Curve}
+							}
+						}
+						// Force them into the WFH action. Make sure "wfh_session" exists in your actions YAML!
+						se.utilityBrain.ForceTask(actor.ActorID, phase.PhaseID, remainingDuration, state.SimTime, satisfies)
+
+						onMacroRail = true
+						break
+
 					} else if phase.Type == "sleep" {
-						slog.Info("SLEEP ENGAGED (Asymmetric Spring)",
-							"actor", actor.ActorID,
-							"target_bedtime", actualStart.Add(-startShift).Format(hourMinute),
-							"actual_bedtime", actualStart.Format(hourMinute),
-							"start_shift", startShift.String(),
-							"target_wakeup", actualEnd.Add(-endShift).Format(hourMinute),
-							"actual_wakeup", actualEnd.Format(hourMinute),
-							"wake_shift", endShift.String(),
-						)
+						// --- THE NEW BEDTIME LOGGING ---
+						snap := se.utilityBrain.GetActorSnapshot(actor.ActorID)
+						var metrics string
+						for k, v := range snap {
+							if val, ok := v.(float64); ok {
+								metrics += fmt.Sprintf("%s:%.1f ", k[6:], val)
+							}
+						}
+						slog.Info("SLEEP ENGAGED", "actor", actor.ActorID, "bedtime", actualStart.Format(hourMinute), "wakeup", actualEnd.Format(hourMinute), "state", metrics)
+						// -------------------------------
 
 						ledger.CurrentState = domain.ActorStateAsleep
 						se.activePhase[actor.ActorID] = phase.PhaseID
@@ -423,4 +451,8 @@ func (se *StableEngine) GetActionUrgency(actorID string, actionID string, state 
 
 func (se *StableEngine) ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
 	se.utilityBrain.ForceTask(actorID, taskName, duration, startTime, satisfies)
+}
+
+func (se *StableEngine) GetActorSnapshot(actorID string) parsers.StateSnapshot {
+	return se.utilityBrain.GetActorSnapshot(actorID)
 }

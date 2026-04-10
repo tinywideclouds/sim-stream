@@ -12,6 +12,8 @@ import (
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
+const logTimeFormat = "Mon 15:04"
+
 type TickResult struct {
 	Timestamp       time.Time
 	GridVoltage     float64
@@ -31,6 +33,7 @@ type AIEngine interface {
 	InterruptCurrentTask(actorID string, state *engine.SimulationState) bool
 	GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64
 	ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill)
+	GetActorSnapshot(actorID string) parsers.StateSnapshot
 }
 
 type Orchestrator struct {
@@ -96,6 +99,8 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 }
 
 func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activeHumanActors []string) {
+	simLogger := slog.With("sim_time", state.SimTime.Format(logTimeFormat))
+
 	if state.House.PendingEvents == nil {
 		state.House.PendingEvents = make(map[string]*engine.PendingEvent)
 	}
@@ -161,7 +166,7 @@ func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activ
 			ev.GatheringEndsAt = endsAt
 		} else if gatheringDuration > 0 {
 
-			slog.Info("GATHERING WINDOW OPENED", "event", eventID, "action", actionID, "initiator", actorID, "duration", gatheringDuration)
+			simLogger.Info("GATHERING WINDOW OPENED", "event", eventID, "action", actionID, "initiator", actorID, "duration", gatheringDuration)
 
 			o.humanAI.InterruptCurrentTask(actorID, state)
 
@@ -189,6 +194,8 @@ func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activ
 }
 
 func (o *Orchestrator) processPendingWindows(state *engine.SimulationState) {
+	simLogger := slog.With("sim_time", state.SimTime.Format(logTimeFormat))
+
 	for _, ev := range state.House.PendingEvents {
 		var template *domain.ActionTemplate
 		for _, act := range state.Blueprint.Actions {
@@ -213,7 +220,7 @@ func (o *Orchestrator) processPendingWindows(state *engine.SimulationState) {
 		if state.SimTime.After(ev.GatheringEndsAt) || state.SimTime.Equal(ev.GatheringEndsAt) {
 			ev.IsExecuting = true
 
-			slog.Info("SHARED EVENT EXECUTING", "event", ev.EventID, "participants", len(ev.Participants), "action", ev.ActionID)
+			simLogger.Info("SHARED EVENT EXECUTING", "event", ev.EventID, "participants", len(ev.Participants), "action", ev.ActionID)
 
 			duration, err := o.sampler.Duration(template.Duration)
 			if err != nil {
@@ -230,6 +237,12 @@ func (o *Orchestrator) processPendingWindows(state *engine.SimulationState) {
 				o.humanAI.ForceTask(participantID, ev.ActionID, duration, state.SimTime, template.Satisfies)
 
 				if ledger, ok := state.Actors[participantID]; ok {
+					// --- WAKE UP TRIGGER ---
+					if ledger.CurrentState == domain.ActorStateAsleep {
+						ledger.CurrentState = domain.ActorStateHomeFree
+						slog.Info("ACTOR JOLTED AWAKE FOR EXECUTION", "actor", participantID, "event", ev.EventID)
+					}
+					// -----------------------
 					ledger.CurrentCommitment = nil
 					ledger.StateEndsAt = state.SimTime.Add(duration)
 				}
@@ -252,9 +265,25 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 		return
 	}
 
+	// CREATE THE CONTEXTUAL LOGGER FOR TRACING
+	simLogger := slog.With("sim_time", state.SimTime.Format(logTimeFormat))
+
 	for _, actor := range state.Blueprint.Actors {
-		if actor.AIModel != "utility" {
+		if actor.AIModel != "utility" && actor.AIModel != "stable" {
 			continue
+		}
+
+		isAsleep := false
+		var hoursRemaining float64
+
+		if ledger, ok := state.Actors[actor.ActorID]; ok {
+			if ledger.CurrentState == domain.ActorStateAway {
+				continue // Do not recall people from the office
+			}
+			if ledger.CurrentState == domain.ActorStateAsleep {
+				isAsleep = true
+				hoursRemaining = ledger.StateEndsAt.Sub(state.SimTime).Hours()
+			}
 		}
 
 		isParticipating := false
@@ -283,10 +312,47 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 			continue
 		}
 
+		// Urgency naturally accounts for Hunger and Leisure based on the action being evaluated
 		urgency := o.humanAI.GetActionUrgency(actor.ActorID, ev.ActionID, state)
-		if urgency > 0.1 {
 
-			slog.Info("ACTOR JOINED SHARED EVENT", "event", ev.EventID, "actor", actor.ActorID, "action", ev.ActionID)
+		// --- THE SLEEP STAGE INERTIA CHECK ---
+		if isAsleep {
+			snap := o.humanAI.GetActorSnapshot(actor.ActorID)
+			energyVal := 100.0
+			if val, ok := snap["actor.energy"].(float64); ok {
+				energyVal = val
+			} else {
+				simLogger.Warn("MISSING ENERGY VALUE IN SNAPSHOT", "actor", actor.ActorID)
+			}
+
+			timeInertia := 0.0
+			if hoursRemaining > 2.0 {
+				// Deep Sleep Wall
+				timeInertia = 50.0
+			} else if hoursRemaining > 0 {
+				// Linear drop-off in the final 2 hours (2h = 10.0, 1h = 5.0, 30m = 2.5)
+				timeInertia = hoursRemaining * 5.0
+			}
+			// Add a minor modifier for raw exhaustion
+			bioInertia := (100.0 - energyVal) * 0.5
+
+			sleepInertia := timeInertia + bioInertia
+
+			if urgency <= sleepInertia {
+				continue
+			}
+
+			simLogger.Info("SLEEP INERTIA OVERCOME",
+				"actor", actor.ActorID,
+				"event", ev.ActionID,
+				"hours_left", fmt.Sprintf("%.1f", hoursRemaining),
+				"inertia", fmt.Sprintf("%.1f", sleepInertia),
+				"urgency", fmt.Sprintf("%.1f", urgency))
+		}
+		// -------------------------------------
+
+		if urgency > 0.1 {
+			simLogger.Info("ACTOR JOINED SHARED EVENT", "event", ev.EventID, "actor", actor.ActorID, "action", ev.ActionID)
 			ev.Participants = append(ev.Participants, actor.ActorID)
 
 			if !ev.IsExecuting {
@@ -303,6 +369,14 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 				if durationRemaining < 0 {
 					durationRemaining = 0
 				}
+
+				if isAsleep {
+					if ledger, ok := state.Actors[actor.ActorID]; ok {
+						ledger.CurrentState = domain.ActorStateHomeFree
+						simLogger.Info("ACTOR WOKEN BY LATE JOIN", "actor", actor.ActorID, "event", ev.EventID)
+					}
+				}
+
 				o.humanAI.ForceTask(actor.ActorID, ev.ActionID, durationRemaining, state.SimTime, template.Satisfies)
 				if ledger, ok := state.Actors[actor.ActorID]; ok {
 					ledger.StateEndsAt = state.SimTime.Add(durationRemaining)

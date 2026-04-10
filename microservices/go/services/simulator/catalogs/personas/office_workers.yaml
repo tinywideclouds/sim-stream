@@ -17,7 +17,6 @@ personas:
           application: "continuous"
           effects: 
             energy: { amount: 80.0, over: "7h30m", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
@@ -54,7 +53,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
@@ -91,7 +89,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
@@ -128,7 +125,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 85.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift_and_gym"
@@ -165,7 +161,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 70.0, over: "6h30m", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_and_drinks"
@@ -202,7 +197,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
@@ -239,7 +233,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 90.0, over: "8h30m", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
@@ -276,7 +269,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
@@ -313,7 +305,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
@@ -350,7 +341,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "7h", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "9h", curve: "linear" }
             hygiene: { amount: -30.0, over: "9h", curve: "linear" }
             leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"

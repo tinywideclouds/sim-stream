@@ -108,7 +108,7 @@ func (ue *UtilityEngine) CanSafelyWait(actorID string, projectedWait time.Durati
 	}
 
 	waitHours := projectedWait.Hours()
-	const safetyThreshold = 5.0 // Reject the wait if any meter would drop below 5%
+	const safetyThreshold = 5.0
 
 	for _, m := range state.Blueprint.Meters {
 		if m.BaseDecayPerHour > 0 {
@@ -116,39 +116,35 @@ func (ue *UtilityEngine) CanSafelyWait(actorID string, projectedWait time.Durati
 			decayAmount := m.BaseDecayPerHour * waitHours
 
 			if m.Curve == "exponential" {
-				decayAmount *= 1.5 // Rough safety multiplier for exponential curves
+				decayAmount *= 1.5
 			}
 
 			if (currentVal - decayAmount) < safetyThreshold {
-				return false // The actor will burn out before the event is ready!
+				return false
 			}
 		}
 	}
 	return true
 }
 
-// InterruptCurrentTask is called by the orchestrator when a PendingEvent becomes active, forcing the actor to drop micro-actions.
 func (ue *UtilityEngine) InterruptCurrentTask(actorID string, state *engine.SimulationState) bool {
 	activeActID, exists := ue.activeAction[actorID]
 	if !exists {
-		return true // Not busy, trivially ready to transition
+		return true
 	}
 
-	// Ensure the current action allows for interruption
 	for _, act := range state.Blueprint.Actions {
 		if act.ActionID == activeActID {
 			if !act.Interruptible {
-				return false // Stuck in an uninterruptible task
+				return false
 			}
 			break
 		}
 	}
 
-	// Drop the current task
 	delete(ue.activeAction, actorID)
 	delete(ue.activeTasks, actorID)
 
-	// Free the actor up in the ledger immediately
 	if actorLedger, ok := state.Actors[actorID]; ok {
 		actorLedger.StateEndsAt = state.SimTime
 	}
@@ -319,6 +315,12 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 		// 1. BASE DECAY APPLICATION
 		for _, m := range state.Blueprint.Meters {
 			decayAmount := m.BaseDecayPerHour * (tickDuration.Seconds() / 3600.0)
+
+			// Reduce resting metabolism by 85% overnight so they wake up ready for breakfast, not starving
+			if actorLedger.CurrentState == domain.ActorStateAsleep {
+				decayAmount *= 0.15
+			}
+
 			if m.Curve == "exponential" {
 				currentVal := ue.meters[actor.ActorID][m.MeterID]
 				factor := (maxMeters[m.MeterID] - currentVal) / maxMeters[m.MeterID]
@@ -378,8 +380,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 		var validActions []domain.ActionTemplate
 		actionScores := make(map[string]float64)
 
-		// SETUP: Intent Suppression
-		// If an actor is waiting for a commitment (e.g. Tea Round), they expect certain meters to be filled soon.
 		suppressedDeficits := make(map[string]float64)
 		hasCommitment := false
 
@@ -396,9 +396,30 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 		}
 
 		for _, template := range state.Blueprint.Actions {
-			// SAFETY CHECK: If waiting for a gathering, absolutely do NOT start an uninterruptible action
 			if hasCommitment && !template.Interruptible {
 				continue
+			}
+
+			// PHYSICAL DEVICE LOCK CHECK
+			if template.DeviceID != "" {
+				isDeviceLocked := false
+
+				if state.House.ResourceLocks != nil {
+					if _, isLocked := state.House.ResourceLocks[template.DeviceID]; isLocked {
+						isDeviceLocked = true
+					}
+				}
+				if devLedger, exists := state.Devices[template.DeviceID]; exists {
+					if devLedger.State == domain.DeviceStateOn {
+						isDeviceLocked = true
+					}
+				}
+
+				if isDeviceLocked {
+					if template.Sharing == nil || template.Sharing.Type != domain.SharingFreeRider {
+						continue // Device is busy, action unavailable
+					}
+				}
 			}
 
 			available := true
@@ -417,12 +438,10 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 				currentVal := ue.meters[actor.ActorID][meterID]
 				deficit := maxMeters[meterID] - currentVal
 
-				// INTENT SUPPRESSION: We are already committed to something that will satisfy this need.
 				if suppression, exists := suppressedDeficits[meterID]; exists {
 					deficit -= suppression
 				}
 
-				// If there's no deficit left after factoring in our pending commitments, ignore it.
 				if deficit <= 0 {
 					continue
 				}

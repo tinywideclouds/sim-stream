@@ -17,7 +17,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "midday_errands"
@@ -54,7 +53,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 85.0, over: "9h", curve: "front_loaded" }
-            hunger: { amount: 40.0, over: "9h", curve: "linear" }
             hygiene: { amount: -20.0, over: "9h", curve: "linear" }
             leisure: { amount: 5.0, over: "9h", curve: "linear" }
 
@@ -75,7 +73,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 75.0, over: "7h30m", curve: "front_loaded" }
-            hunger: { amount: 30.0, over: "7h30m", curve: "linear" }
             hygiene: { amount: -15.0, over: "7h30m", curve: "linear" }
             leisure: { amount: 5.0, over: "7h30m", curve: "linear" }
       - phase_id: "morning_activities"
@@ -112,7 +109,6 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "afternoon_visiting"

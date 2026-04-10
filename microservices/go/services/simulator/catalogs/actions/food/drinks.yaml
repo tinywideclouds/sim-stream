@@ -1,0 +1,32 @@
+# catalogs/actions/food/drinks.yaml
+actions:
+  - id: "make_hot_drink"
+    requires_device_tag: "hot_beverage" # e.g., kettle or coffee machine
+    template:
+      action_id: "make_hot_drink"
+      interruptible: true
+      initiation_friction: 1.0
+      sharing:
+        type: "scalable"
+        gathering_window: "5m"
+        duration_multiplier_per_actor: 0.5 # Adds 50% more duration per extra person sharing the boil
+        max_participants: 4
+      satisfies:
+        energy: { amount: 15.0, curve: "linear" }
+        hunger: { amount: 5.0, curve: "linear" }
+      duration: { type: 3, value: "4m" }
+      bonus_curves:
+        - context_key: "time.hour_float"
+          peak: 7.5
+          width: 1.5
+          magnitude: 25.0
+          
+  - id: "get_cold_drink"
+    requires_device_tag: "refrigeration" # Grab water/juice from fridge
+    template:
+      action_id: "get_cold_drink"
+      interruptible: true
+      initiation_friction: 0.5
+      satisfies:
+        energy: { amount: 5.0, curve: "front_loaded" }
+      duration: { type: 3, value: "2m" }

@@ -17,9 +17,22 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
+      - phase_id: "wfh_session"
+        type: "wfh"
+        anchor_time: "09:00"
+        gravity: 0.8
+        duration:
+          type: 1
+          mean: "8h"
+          std_dev: "30m"
+          flexibility: "1h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: -40.0, over: "8h", curve: "linear" }
+            leisure: { amount: -30.0, over: "8h", curve: "linear" }
 
   - id: "wfh_distracted"
     type: "adult"
@@ -38,9 +51,22 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
+      - phase_id: "wfh_session"
+        type: "wfh"
+        anchor_time: "09:30"
+        gravity: 0.5 # Less gravity, more likely to wander off
+        duration:
+          type: 1
+          mean: "7h30m"
+          std_dev: "45m"
+          flexibility: "1h30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: -35.0, over: "7h30m", curve: "linear" }
+            leisure: { amount: -40.0, over: "7h30m", curve: "linear" }
 
   - id: "wfh_workaholic"
     type: "adult"
@@ -59,9 +85,22 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
-            hunger: { amount: 20.0, over: "6h", curve: "linear" }
             hygiene: { amount: -10.0, over: "6h", curve: "linear" }
             leisure: { amount: 5.0, over: "6h", curve: "linear" }
+      - phase_id: "wfh_session"
+        type: "wfh"
+        anchor_time: "08:00"
+        gravity: 0.95
+        duration:
+          type: 1
+          mean: "10h"
+          std_dev: "1h"
+          flexibility: "30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: -60.0, over: "10h", curve: "linear" }
+            leisure: { amount: -50.0, over: "10h", curve: "linear" }
 
   - id: "wfh_night_owl"
     type: "adult"
@@ -80,9 +119,22 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
+      - phase_id: "wfh_session"
+        type: "wfh"
+        anchor_time: "14:00" # Wakes up late, works late
+        gravity: 0.7
+        duration:
+          type: 1
+          mean: "8h"
+          std_dev: "1h"
+          flexibility: "2h"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: -40.0, over: "8h", curve: "linear" }
+            leisure: { amount: -30.0, over: "8h", curve: "linear" }
 
   - id: "wfh_fitness_junkie"
     type: "adult"
@@ -101,6 +153,19 @@ personas:
           application: "continuous"
           effects:
             energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hunger: { amount: 35.0, over: "8h", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
+      - phase_id: "wfh_session"
+        type: "wfh"
+        anchor_time: "08:30"
+        gravity: 0.8
+        duration:
+          type: 1
+          mean: "8h"
+          std_dev: "15m"
+          flexibility: "30m"
+        modifiers:
+          application: "continuous"
+          effects:
+            energy: { amount: -40.0, over: "8h", curve: "linear" }
+            leisure: { amount: -30.0, over: "8h", curve: "linear" }
