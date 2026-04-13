@@ -4,3 +4,9 @@ nx g @nx/angular:library --name=data-targets-api --directory=libs/data-targets/a
 
 
 nx g @nx/node:library --name=libs-sim-generator --directory=libs/sim/generator --tags="scope:generator"
+
+nx g @nx/js:library util-parsers --bundler=vite --unitTestRunner=vitest
+
+nx g @nx/workspace:move --project=util-parsers --destination=libs/sim/util-parsers
+
+nx g @nx/angular:library data-access --directory=libs/sim/data-access --buildable=true --unitTestRunner=vitest

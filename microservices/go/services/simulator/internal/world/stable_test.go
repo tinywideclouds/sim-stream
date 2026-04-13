@@ -23,7 +23,6 @@ type MockUtility struct {
 
 func (m *MockUtility) ResetMeters(actorID string, starting map[string]float64) {}
 
-// UPDATED: Now matches the new ContinuousEffect interface
 func (m *MockUtility) ApplyModifiersToMeters(actorID string, mods map[string]domain.ContinuousEffect, limits map[string]float64) {
 }
 func (m *MockUtility) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tick time.Duration) ([]string, []string, []string) {
@@ -40,7 +39,11 @@ func (m *MockUtility) GetActorSnapshot(actorID string) parsers.StateSnapshot {
 	return parsers.StateSnapshot{"actor.energy": 50.0} // Neutral energy urgency
 }
 
-// UPDATED: Now accepts the ActionFill map
+// BUGFIX: Added missing interface method so MockUtility correctly implements UtilityBrain
+func (m *MockUtility) InterruptCurrentTask(actorID string, state *engine.SimulationState) bool {
+	return true
+}
+
 func (m *MockUtility) ForceTask(actorID string, actionID string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
 }
 
@@ -199,7 +202,6 @@ func TestStableEngine_SleepGhosting(t *testing.T) {
 	}
 }
 
-// --- NEW TEST ---
 func TestCalculatePhaseTimes_Sleep(t *testing.T) {
 	se := world.NewStableEngine(&MockUtility{}, &MockRoutine{}, &MockCalendar{}, generator.NewSampler([32]byte{}))
 

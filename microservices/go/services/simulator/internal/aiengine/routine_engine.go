@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
+	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
 	"github.com/tinywideclouds/go-sim-probability/pkg/parsers"
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
@@ -17,11 +18,16 @@ type RoutineEngine struct {
 	rolloverHour int
 }
 
-func NewRoutineEngine(s *engine.Scheduler, n *engine.Negotiator, e *engine.Executor, rolloverHour int) *RoutineEngine {
+func NewRoutineEngine(s *generator.Sampler, rolloverHour int) *RoutineEngine {
+
+	scheduler := engine.NewScheduler(s)
+	negotiator := engine.NewNegotiator()
+	executor := engine.NewExecutor(s)
+
 	return &RoutineEngine{
-		scheduler:    s,
-		negotiator:   n,
-		executor:     e,
+		scheduler:    scheduler,
+		negotiator:   negotiator,
+		executor:     executor,
 		rolloverHour: rolloverHour,
 		dailyPlan:    make(map[string]map[string]engine.ScheduledRoutine),
 	}

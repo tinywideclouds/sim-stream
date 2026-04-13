@@ -1,0 +1,96 @@
+<div class="min-h-screen bg-slate-50 flex flex-col">
+  
+  <header class="bg-slate-900 text-white px-6 py-4 flex items-center gap-8 shadow-md">
+    <div class="text-xl font-bold tracking-wider text-blue-400">SIM_ANALYZER</div>
+    <nav class="flex gap-4">
+      <button 
+        (click)="activeSection.set('ingestion')"
+        [class.bg-slate-800]="activeSection() === 'ingestion'"
+        class="px-4 py-2 rounded-md hover:bg-slate-700 transition-colors font-medium">
+        [ Ingestion ]
+      </button>
+      <button 
+        (click)="activeSection.set('analysis')"
+        [class.bg-slate-800]="activeSection() === 'analysis'"
+        class="px-4 py-2 rounded-md hover:bg-slate-700 transition-colors font-medium">
+        [ Analysis ]
+      </button>
+    </nav>
+  </header>
+
+  <main class="flex-1 overflow-hidden relative">
+    
+    @if (activeSection() === 'ingestion') {
+      <div class="p-8 h-full overflow-y-auto">
+        <sim-file-uploader></sim-file-uploader>
+        
+        <div class="max-w-4xl mx-auto mt-8 p-6 bg-white rounded-xl shadow-sm border border-slate-200">
+          <h3 class="font-bold text-slate-800 mb-4">Current Data Loaded</h3>
+          <ul class="text-sm text-slate-600 space-y-2">
+            <li>Households detected: <span class="font-mono bg-slate-100 px-2 py-0.5 rounded">{{ state.availableHouseholds().length }}</span></li>
+            <li>Power bounds: <span class="font-mono bg-slate-100 px-2 py-0.5 rounded">{{ state.simTimeRange()?.start?.toString() || 'None' }}</span></li>
+          </ul>
+        </div>
+      </div>
+    }
+
+    @if (activeSection() === 'analysis') {
+      <div class="flex h-full">
+        
+        <aside class="w-72 bg-white border-r border-slate-200 p-6 flex flex-col overflow-y-auto shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+          <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Select Household</h2>
+          
+          <select 
+            [value]="state.selectedHousehold() || ''"
+            (change)="onHouseholdChange($event)"
+            class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 mb-8">
+            <option value="">-- Choose --</option>
+            @for (house of state.availableHouseholds(); track house) {
+              <option [value]="house">{{ house }}</option>
+            }
+          </select>
+
+          @if (state.selectedHousehold()) {
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Actors</h2>
+            <div class="space-y-3 mb-8">
+              @for (actor of state.availableActors(); track actor) {
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <input type="checkbox" 
+                         [checked]="state.selectedActors().includes(actor)"
+                         (change)="toggleActor(actor, $event)"
+                         class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500">
+                  <span class="text-sm text-slate-700 group-hover:text-slate-900 font-medium truncate">{{ actor }}</span>
+                </label>
+              }
+            </div>
+
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Resolution</h2>
+            <select 
+              [value]="state.aggregationIntervalMs()"
+              (change)="onResolutionChange($event)"
+              class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-lg p-2.5">
+              <option value="0">Raw (15 sec)</option>
+              <option value="300000">5 Minutes</option>
+              <option value="900000">15 Minutes</option>
+            </select>
+          }
+        </aside>
+
+        <section class="flex-1 bg-slate-50 p-6 overflow-y-auto">
+          @if (!state.selectedHousehold()) {
+            <div class="flex items-center justify-center h-full text-slate-400">
+              Select a household from the sidebar to view telemetry.
+            </div>
+          } @else {
+            <div class="flex flex-col gap-6 max-w-[1600px] mx-auto">
+              
+              <sim-physics-chart></sim-physics-chart>
+              <sim-actor-timeline></sim-actor-timeline>
+              <sim-actor-meters></sim-actor-meters>
+            </div>
+          }
+        </section>
+      </div>
+    }
+  </main>
+</div>

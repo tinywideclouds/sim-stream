@@ -32,6 +32,10 @@ func (m *MockAIEngine) GetActionUrgency(actorID string, actionID string, state *
 func (m *MockAIEngine) ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill) {
 }
 
+func (m *MockAIEngine) GetActorSnapshot(actorID string) parsers.StateSnapshot {
+	return parsers.StateSnapshot{"actor.energy": 100.0}
+}
+
 type MockWeather struct{}
 
 func (m MockWeather) GetTemperature(t time.Time) float64     { return 15.0 }

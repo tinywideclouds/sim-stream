@@ -14,6 +14,13 @@ import (
 
 const logTimeFormat = "Mon 15:04"
 
+type ActorTickState struct {
+	ActorID  string
+	ActionID string
+	IsShared bool
+	Meters   map[string]float64
+}
+
 type TickResult struct {
 	Timestamp       time.Time
 	GridVoltage     float64
@@ -23,7 +30,7 @@ type TickResult struct {
 	IndoorTempC     float64
 	TankTempC       float64
 	ActiveDevices   []string
-	ActiveActors    []string
+	ActiveActors    []ActorTickState
 	Anomalies       []string
 	DebugLog        []string
 }
@@ -64,7 +71,63 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 	o.handleSharingIntents(state, activeHumanActors)
 
 	activeAmbientActors := engine.ProcessAmbientSystems(state, snapshot, o.sampler)
-	activeActors := append(activeHumanActors, activeAmbientActors...)
+
+	// --- Convert raw string outputs into structured ActorTickState objects ---
+	var finalActors []ActorTickState
+
+	for _, actStr := range activeHumanActors {
+		parts := strings.Split(actStr, ":")
+		if len(parts) != 2 {
+			continue
+		}
+		actorID, actionID := parts[0], parts[1]
+
+		isShared := false
+		for _, ev := range state.House.PendingEvents {
+			if ev.IsExecuting && ev.ActionID == actionID {
+				for _, p := range ev.Participants {
+					if p == actorID {
+						if len(ev.Participants) > 1 {
+							isShared = true
+						}
+						break
+					}
+				}
+			}
+		}
+
+		meters := make(map[string]float64)
+		snap := o.humanAI.GetActorSnapshot(actorID)
+		if snap != nil {
+			for k, v := range snap {
+				if strings.HasPrefix(k, "actor.") {
+					if val, ok := v.(float64); ok {
+						meters[strings.TrimPrefix(k, "actor.")] = val
+					}
+				}
+			}
+		}
+
+		finalActors = append(finalActors, ActorTickState{
+			ActorID:  actorID,
+			ActionID: actionID,
+			IsShared: isShared,
+			Meters:   meters,
+		})
+	}
+
+	for _, actStr := range activeAmbientActors {
+		parts := strings.Split(actStr, ":")
+		if len(parts) == 2 {
+			finalActors = append(finalActors, ActorTickState{
+				ActorID:  parts[0],
+				ActionID: parts[1],
+				IsShared: false,
+				Meters:   make(map[string]float64),
+			})
+		}
+	}
+	// ------------------------------------------------------------------------
 
 	participantCounts := make(map[string]int)
 	if state.House.PendingEvents != nil {
@@ -92,7 +155,7 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 		IndoorTempC:     state.IndoorTempC,
 		TankTempC:       state.HotWaterTankC,
 		ActiveDevices:   physics.ActiveDevices,
-		ActiveActors:    activeActors,
+		ActiveActors:    finalActors,
 		Anomalies:       anomalies,
 		DebugLog:        debugLogs,
 	}
@@ -237,12 +300,10 @@ func (o *Orchestrator) processPendingWindows(state *engine.SimulationState) {
 				o.humanAI.ForceTask(participantID, ev.ActionID, duration, state.SimTime, template.Satisfies)
 
 				if ledger, ok := state.Actors[participantID]; ok {
-					// --- WAKE UP TRIGGER ---
 					if ledger.CurrentState == domain.ActorStateAsleep {
 						ledger.CurrentState = domain.ActorStateHomeFree
 						slog.Info("ACTOR JOLTED AWAKE FOR EXECUTION", "actor", participantID, "event", ev.EventID)
 					}
-					// -----------------------
 					ledger.CurrentCommitment = nil
 					ledger.StateEndsAt = state.SimTime.Add(duration)
 				}
@@ -265,7 +326,6 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 		return
 	}
 
-	// CREATE THE CONTEXTUAL LOGGER FOR TRACING
 	simLogger := slog.With("sim_time", state.SimTime.Format(logTimeFormat))
 
 	for _, actor := range state.Blueprint.Actors {
@@ -278,7 +338,7 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 
 		if ledger, ok := state.Actors[actor.ActorID]; ok {
 			if ledger.CurrentState == domain.ActorStateAway {
-				continue // Do not recall people from the office
+				continue
 			}
 			if ledger.CurrentState == domain.ActorStateAsleep {
 				isAsleep = true
@@ -312,10 +372,8 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 			continue
 		}
 
-		// Urgency naturally accounts for Hunger and Leisure based on the action being evaluated
 		urgency := o.humanAI.GetActionUrgency(actor.ActorID, ev.ActionID, state)
 
-		// --- THE SLEEP STAGE INERTIA CHECK ---
 		if isAsleep {
 			snap := o.humanAI.GetActorSnapshot(actor.ActorID)
 			energyVal := 100.0
@@ -327,13 +385,10 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 
 			timeInertia := 0.0
 			if hoursRemaining > 2.0 {
-				// Deep Sleep Wall
 				timeInertia = 50.0
 			} else if hoursRemaining > 0 {
-				// Linear drop-off in the final 2 hours (2h = 10.0, 1h = 5.0, 30m = 2.5)
 				timeInertia = hoursRemaining * 5.0
 			}
-			// Add a minor modifier for raw exhaustion
 			bioInertia := (100.0 - energyVal) * 0.5
 
 			sleepInertia := timeInertia + bioInertia
@@ -349,7 +404,6 @@ func (o *Orchestrator) inviteAndJoin(state *engine.SimulationState, ev *engine.P
 				"inertia", fmt.Sprintf("%.1f", sleepInertia),
 				"urgency", fmt.Sprintf("%.1f", urgency))
 		}
-		// -------------------------------------
 
 		if urgency > 0.1 {
 			simLogger.Info("ACTOR JOINED SHARED EVENT", "event", ev.EventID, "actor", actor.ActorID, "action", ev.ActionID)

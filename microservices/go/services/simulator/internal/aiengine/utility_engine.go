@@ -100,7 +100,6 @@ func NewUtilityEngine(sampler *generator.Sampler) *UtilityEngine {
 	}
 }
 
-// CanSafelyWait verifies if an actor can survive a given wait time without hitting biological burnout (starving).
 func (ue *UtilityEngine) CanSafelyWait(actorID string, projectedWait time.Duration, state *engine.SimulationState) bool {
 	actorMeters, exists := ue.meters[actorID]
 	if !exists {
@@ -316,7 +315,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 		for _, m := range state.Blueprint.Meters {
 			decayAmount := m.BaseDecayPerHour * (tickDuration.Seconds() / 3600.0)
 
-			// Reduce resting metabolism by 85% overnight so they wake up ready for breakfast, not starving
 			if actorLedger.CurrentState == domain.ActorStateAsleep {
 				decayAmount *= 0.15
 			}
@@ -399,6 +397,29 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 			if hasCommitment && !template.Interruptible {
 				continue
 			}
+
+			// --- ORGANIC SATIETY: THE "PRIMARY PURPOSE" GATE ---
+			var primaryMeter string
+			var maxFill float64 = -1.0
+			for m, fill := range template.Satisfies {
+				if fill.Amount > maxFill {
+					maxFill = fill.Amount
+					primaryMeter = m
+				}
+			}
+
+			if primaryMeter != "" {
+				currentVal := ue.meters[actor.ActorID][primaryMeter]
+				maxVal := maxMeters[primaryMeter]
+				deficit := maxVal - currentVal
+
+				// If they are >90% full on the primary reason for this action, they physically cannot do it.
+				// This instantly kills chain-eating, regardless of Gaussian time bonuses.
+				if deficit < (maxVal * 0.1) {
+					continue
+				}
+			}
+			// ---------------------------------------------------
 
 			// PHYSICAL DEVICE LOCK CHECK
 			if template.DeviceID != "" {

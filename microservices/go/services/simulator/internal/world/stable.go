@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
@@ -23,7 +24,7 @@ type UtilityBrain interface {
 	GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64
 	GetActorSnapshot(actorID string) parsers.StateSnapshot
 
-	InterruptCurrentTask(actorID string, state *engine.SimulationState) bool // ADD THIS LINE
+	InterruptCurrentTask(actorID string, state *engine.SimulationState) bool
 	ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill)
 }
 
@@ -155,17 +156,10 @@ func (se *StableEngine) calculateSleepPhase(actor domain.Actor, phase domain.Pha
 }
 
 func (se *StableEngine) calculateGenericPhase(actor domain.Actor, phase domain.Phase, state *engine.SimulationState, dayType string) (time.Time, time.Time, time.Duration, time.Duration) {
-	anchor, err := time.Parse(hourMinute, phase.AnchorTime)
-	if err != nil {
-		return state.SimTime, state.SimTime, 0, 0
-	}
+	anchor, _ := time.Parse(hourMinute, phase.AnchorTime)
 
+	// 1. Assume the phase belongs to TODAY
 	baseStart := time.Date(state.SimTime.Year(), state.SimTime.Month(), state.SimTime.Day(), anchor.Hour(), anchor.Minute(), 0, 0, state.SimTime.Location())
-	if state.SimTime.Hour() < 12 && anchor.Hour() > 12 {
-		baseStart = baseStart.Add(-24 * time.Hour)
-	} else if state.SimTime.Hour() > 12 && anchor.Hour() < 12 {
-		baseStart = baseStart.Add(24 * time.Hour)
-	}
 
 	baseDuration, _ := se.sampler.Duration(phase.Duration.ProbabilityDistribution)
 	if baseDuration == 0 {
@@ -182,7 +176,20 @@ func (se *StableEngine) calculateGenericPhase(actor domain.Actor, phase domain.P
 	startShift := time.Duration(float64(maxShift) * pullFactor)
 	endShift := startShift
 
-	return baseStart.Add(startShift), baseStart.Add(baseDuration).Add(startShift), startShift, endShift
+	actualStart := baseStart.Add(startShift)
+	actualEnd := actualStart.Add(baseDuration)
+
+	// 2. THE FIX: Only push to tomorrow if today's shift has completely finished
+	if state.SimTime.After(actualEnd) {
+		actualStart = actualStart.Add(24 * time.Hour)
+		actualEnd = actualEnd.Add(24 * time.Hour)
+	} else if state.SimTime.Before(actualStart.Add(-12 * time.Hour)) {
+		// Edge case: If we are evaluating a late-night shift way too early in the morning
+		actualStart = actualStart.Add(-24 * time.Hour)
+		actualEnd = actualEnd.Add(-24 * time.Hour)
+	}
+
+	return actualStart, actualEnd, startShift, endShift
 }
 
 func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
@@ -241,24 +248,23 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 				}
 			}
 
-			// --- THE NEW STATE LOGGING ---
 			snap := se.utilityBrain.GetActorSnapshot(actor.ActorID)
 			var metrics string
 			for k, v := range snap {
 				if val, ok := v.(float64); ok {
-					// strip "actor." prefix for cleaner logs
 					metrics += fmt.Sprintf("%s:%.1f ", k[6:], val)
 				}
 			}
 
+			simLogger := slog.With("sim_time", state.SimTime.Format("Mon 15:04"))
 			switch ledger.CurrentState {
 			case domain.ActorStateAsleep:
-				slog.Info("ACTOR WOKE UP", "actor", actor.ActorID, "time", state.SimTime.Format(hourMinute), "state", metrics)
+				simLogger.Info("ACTOR WOKE UP", "actor", actor.ActorID, "state", metrics)
 			case domain.ActorStateAway:
-				slog.Info("ACTOR RETURNED HOME", "actor", actor.ActorID, "time", state.SimTime.Format(hourMinute), "state", metrics)
+				simLogger.Info("ACTOR RETURNED HOME", "actor", actor.ActorID, "state", metrics)
 			}
-			// -----------------------------
-			slog.Info("PHASE COMPLETED", "actor", actor.ActorID, "state", ledger.CurrentState, "return_time", state.SimTime.Format(hourMinute))
+
+			simLogger.Info("PHASE COMPLETED", "actor", actor.ActorID, "state", ledger.CurrentState)
 
 			ledger.CurrentState = domain.ActorStateHomeFree
 			delete(se.pendingReentry, actor.ActorID)
@@ -269,12 +275,30 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 
 		if ledger.CurrentState == domain.ActorStateHomeFree {
 			for _, phase := range actor.Phases {
+				actualStart, actualEnd, startShift, endShift := se.CalculatePhaseTimes(*actor, phase, state, dayType)
 
 				if se.activePhase[actor.ActorID] == phase.PhaseID {
+					if !state.SimTime.Before(actualEnd) {
+						if mods, exists := se.pendingReentry[actor.ActorID]; exists && mods.Application == "block_end" {
+							limits := make(map[string]float64)
+							for _, m := range state.Blueprint.Meters {
+								if m.Max > 0 {
+									limits[m.MeterID] = m.Max
+								} else {
+									limits[m.MeterID] = 100.0
+								}
+							}
+							se.utilityBrain.ApplyModifiersToMeters(actor.ActorID, mods.Effects, limits)
+						}
+						delete(se.activePhase, actor.ActorID)
+						delete(se.pendingReentry, actor.ActorID)
+
+						simLogger := slog.With("sim_time", state.SimTime.Format("Mon 15:04"))
+						simLogger.Info("PHASE COMPLETED", "actor", actor.ActorID, "phase", phase.PhaseID)
+					}
 					continue
 				}
 
-				actualStart, actualEnd, startShift, endShift := se.CalculatePhaseTimes(*actor, phase, state, dayType)
 				actualDuration := actualEnd.Sub(actualStart)
 				timeSinceTrigger := state.SimTime.Sub(actualStart)
 
@@ -286,7 +310,8 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 					}
 
 					if phase.Type == "away" && dayType == "workday" {
-						slog.Info("AWAY ENGAGED", "actor", actor.ActorID, "phase", phase.PhaseID, "start", startShift, "leave", actualStart.Format(hourMinute), "end", endShift, "return", actualEnd.Format(hourMinute))
+						simLogger := slog.With("sim_time", state.SimTime.Format("Mon 15:04"))
+						simLogger.Info("AWAY ENGAGED", "actor", actor.ActorID, "phase", phase.PhaseID, "start", startShift, "leave", actualStart.Format(hourMinute), "end", endShift, "return", actualEnd.Format(hourMinute))
 
 						ledger.CurrentState = domain.ActorStateAway
 						se.activePhase[actor.ActorID] = phase.PhaseID
@@ -305,9 +330,9 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 						break
 
 					} else if phase.Type == "wfh" && dayType == "workday" {
-						slog.Info("WFH SHIFT ENGAGED", "actor", actor.ActorID, "phase", phase.PhaseID, "start", actualStart.Format(hourMinute), "end", actualEnd.Format(hourMinute))
+						simLogger := slog.With("sim_time", state.SimTime.Format("Mon 15:04"))
+						simLogger.Info("WFH SHIFT ENGAGED", "actor", actor.ActorID, "phase", phase.PhaseID, "start", actualStart.Format(hourMinute), "end", actualEnd.Format(hourMinute))
 
-						// They stay HomeFree, but we lock them into the active phase to prevent them from wandering
 						se.activePhase[actor.ActorID] = phase.PhaseID
 						se.pendingReentry[actor.ActorID] = phase.Modifiers
 
@@ -317,14 +342,12 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 								satisfies[m] = domain.ActionFill{Amount: eff.Amount, Curve: eff.Curve}
 							}
 						}
-						// Force them into the WFH action. Make sure "wfh_session" exists in your actions YAML!
 						se.utilityBrain.ForceTask(actor.ActorID, phase.PhaseID, remainingDuration, state.SimTime, satisfies)
 
 						onMacroRail = true
 						break
 
 					} else if phase.Type == "sleep" {
-						// --- THE NEW BEDTIME LOGGING ---
 						snap := se.utilityBrain.GetActorSnapshot(actor.ActorID)
 						var metrics string
 						for k, v := range snap {
@@ -332,8 +355,9 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 								metrics += fmt.Sprintf("%s:%.1f ", k[6:], val)
 							}
 						}
-						slog.Info("SLEEP ENGAGED", "actor", actor.ActorID, "bedtime", actualStart.Format(hourMinute), "wakeup", actualEnd.Format(hourMinute), "state", metrics)
-						// -------------------------------
+
+						simLogger := slog.With("sim_time", state.SimTime.Format("Mon 15:04"))
+						simLogger.Info("SLEEP ENGAGED", "actor", actor.ActorID, "bedtime", actualStart.Format(hourMinute), "wakeup", actualEnd.Format(hourMinute), "state", metrics)
 
 						ledger.CurrentState = domain.ActorStateAsleep
 						se.activePhase[actor.ActorID] = phase.PhaseID
@@ -432,10 +456,120 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 		}
 	}
 
+	// RUN THE BIOLOGY ENGINE
 	utilAct, utilAnom, utilDbg := se.utilityBrain.Process(state, snapshot, tickDuration)
 	activeActors = append(activeActors, utilAct...)
 	anomalies = append(anomalies, utilAnom...)
 	debugLogs = append(debugLogs, utilDbg...)
+
+	// --- WFH VETO AND RESUMPTION LOGIC ---
+	currentActions := make(map[string]string)
+	for _, actStr := range activeActors {
+		parts := strings.Split(actStr, ":")
+		if len(parts) == 2 {
+			currentActions[parts[0]] = parts[1]
+		}
+	}
+
+	simLogger := slog.With("sim_time", state.SimTime.Format("Mon 15:04"))
+
+	for actorID, phaseID := range se.activePhase {
+		var activePhaseDef domain.Phase
+		var aDef domain.Actor
+		var isWFH bool
+
+		for _, a := range state.Blueprint.Actors {
+			if a.ActorID == actorID {
+				aDef = a
+				for _, p := range a.Phases {
+					if p.PhaseID == phaseID && p.Type == "wfh" {
+						activePhaseDef = p
+						isWFH = true
+						break
+					}
+				}
+				break
+			}
+		}
+
+		if !isWFH {
+			continue
+		}
+
+		ledger, exists := state.Actors[actorID]
+		if !exists || ledger.CurrentState != domain.ActorStateHomeFree {
+			continue
+		}
+
+		actionID, isBusy := currentActions[actorID]
+		isSlacking := false
+
+		if isBusy && actionID != phaseID {
+			var chosenTemplate *domain.ActionTemplate
+			for _, act := range state.Blueprint.Actions {
+				if act.ActionID == actionID {
+					chosenTemplate = &act
+					break
+				}
+			}
+
+			isNecessary := false
+			if chosenTemplate != nil {
+				for meterID, fill := range chosenTemplate.Satisfies {
+					// WFH worker is allowed biological breaks, but nothing else.
+					if (meterID == "hunger" || meterID == "hygiene" || meterID == "energy") && fill.Amount > 0 {
+						isNecessary = true
+						break
+					}
+				}
+			}
+
+			if !isNecessary {
+				isSlacking = true
+			}
+		} else if !isBusy {
+			isSlacking = true
+		}
+
+		if isSlacking {
+			dayType := se.calendar.GetDayType(state.SimTime)
+			_, actualEnd, _, _ := se.CalculatePhaseTimes(aDef, activePhaseDef, state, dayType)
+			remainingDuration := actualEnd.Sub(state.SimTime)
+
+			if remainingDuration > 0 {
+				se.utilityBrain.InterruptCurrentTask(actorID, state)
+
+				satisfies := make(map[string]domain.ActionFill)
+				if mods, ok := se.pendingReentry[actorID]; ok && mods.Application == "continuous" {
+					for m, eff := range mods.Effects {
+						satisfies[m] = domain.ActionFill{Amount: eff.Amount, Curve: eff.Curve}
+					}
+				}
+
+				se.utilityBrain.ForceTask(actorID, phaseID, remainingDuration, state.SimTime, satisfies)
+				ledger.StateEndsAt = state.SimTime.Add(remainingDuration)
+
+				foundInArray := false
+				for i, actStr := range activeActors {
+					if strings.HasPrefix(actStr, actorID+":") {
+						activeActors[i] = actorID + ":" + phaseID
+						foundInArray = true
+						break
+					}
+				}
+				if !foundInArray {
+					activeActors = append(activeActors, actorID+":"+phaseID)
+				}
+
+				if isBusy {
+					simLogger.Info("WFH SLACKING VETOED", "actor", actorID, "attempted", actionID, "resumed", phaseID)
+				} else {
+					simLogger.Info("WFH RESUMED AFTER BREAK", "actor", actorID, "resumed", phaseID)
+				}
+			}
+		}
+	}
+	// -------------------------------------
 
 	return activeActors, anomalies, debugLogs
 }

@@ -1,0 +1,13 @@
+.panel { background: #fff; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 1rem; }
+    .table-container { max-height: 400px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+    th { position: sticky; top: 0; background: #f8f9fa; padding: 0.5rem; border-bottom: 2px solid #ddd; }
+    td { padding: 0.5rem; border-bottom: 1px solid #eee; }
+    .time, .actor { font-family: monospace; white-space: nowrap; }
+    .msg { font-weight: 600; }
+    .attrs { color: #666; font-family: monospace; white-space: pre-wrap; word-break: break-all; }
+    .badge { padding: 0.2rem 0.4rem; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+    .badge[data-level="INFO"] { background: #e3f2fd; color: #1565c0; }
+    .badge[data-level="WARN"] { background: #fff3e0; color: #e65100; }
+    .badge[data-level="ERROR"] { background: #ffebee; color: #c62828; }
+    .empty-state { text-align: center; color: #888; padding: 2rem !important; }

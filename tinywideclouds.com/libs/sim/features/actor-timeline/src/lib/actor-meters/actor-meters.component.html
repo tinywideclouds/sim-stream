@@ -1,0 +1,11 @@
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+  <h2 class="text-lg font-bold text-slate-800 mb-4">Actor Motivations (Satiety Meters)</h2>
+  
+  @if (chartOptions(); as options) {
+    <div echarts [options]="options" (chartInit)="onChartInit($event)" class="h-[300px] w-full"></div>
+  } @else {
+    <div class="h-[300px] flex items-center justify-center text-slate-400 font-medium">
+      Awaiting Data...
+    </div>
+  }
+</div>

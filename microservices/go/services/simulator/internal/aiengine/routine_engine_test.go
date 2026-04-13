@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
+	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
 	"github.com/tinywideclouds/go-sim-probability/pkg/parsers"
 )
 
 func TestRoutineEngine_Adapters(t *testing.T) {
-	// Initialize with nil dependencies as we only test the adapter logic
-	re := NewRoutineEngine(nil, nil, nil, 3)
+	// Initialize with the correct constructor signature
+	sampler := generator.NewSampler([32]byte{})
+	re := NewRoutineEngine(sampler, 3)
 
 	actorID := "test_actor"
 	simTime := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)

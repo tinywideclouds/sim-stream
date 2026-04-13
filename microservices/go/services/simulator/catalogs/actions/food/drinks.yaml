@@ -12,7 +12,7 @@ actions:
         duration_multiplier_per_actor: 0.5 # Adds 50% more duration per extra person sharing the boil
         max_participants: 4
       satisfies:
-        energy: { amount: 15.0, curve: "linear" }
+        energy: { amount: 8.0, curve: "linear" }
         hunger: { amount: 5.0, curve: "linear" }
       duration: { type: 3, value: "4m" }
       bonus_curves:
@@ -28,5 +28,17 @@ actions:
       interruptible: true
       initiation_friction: 0.5
       satisfies:
-        energy: { amount: 5.0, curve: "front_loaded" }
+        energy: { amount: 3.0, curve: "front_loaded" }
+        hunger: { amount: 3.0, curve: "front_loaded" }
+      duration: { type: 3, value: "2m" }
+
+   # allow people to drink even if they don't have a fridge or kettle
+  - id: "get_glass_water"
+    template:
+      action_id: "get_glass_water"
+      interruptible: true
+      initiation_friction: 0.3
+      satisfies:
+        energy: { amount: 2.0, curve: "front_loaded" }
+        hunger: { amount: 2.0, curve: "front_loaded" }
       duration: { type: 3, value: "2m" }

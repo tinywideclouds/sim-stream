@@ -1,0 +1,31 @@
+<div class="panel">
+      <h2>Engine Logs</h2>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Sim Time</th>
+              <th>Level</th>
+              <th>Message</th>
+              <th>Actor</th>
+              <th>Attributes</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of reversedLogs(); track log.cpuTime.getTime() + $index) {
+              <tr [class.warning]="log.level === 'WARN'" [class.error]="log.level === 'ERROR'">
+                <td class="time">{{ log.simTime || '-' }}</td>
+                <td><span class="badge" [attr.data-level]="log.level">{{ log.level }}</span></td>
+                <td class="msg">{{ log.msg }}</td>
+                <td class="actor">{{ log.actor || '-' }}</td>
+                <td class="attrs">{{ log.attributes | json }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="empty-state">No logs loaded. Drop an app.log file.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
