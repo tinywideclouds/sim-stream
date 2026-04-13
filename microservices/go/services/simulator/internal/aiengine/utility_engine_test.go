@@ -1,4 +1,3 @@
-// aiengine/utility_engine_test.go
 package aiengine
 
 import (
@@ -12,7 +11,6 @@ import (
 )
 
 func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
-	// Setup minimalist blueprint
 	blueprint := &domain.NodeArchetype{
 		Actors: []domain.Actor{
 			{
@@ -29,22 +27,18 @@ func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
 	sampler := generator.NewSampler([32]byte{})
 	utilityEngine := NewUtilityEngine(sampler)
 
-	// Trigger initial map population
 	utilityEngine.Process(state, nil, 1*time.Minute)
 
-	// 1. Test Modifiers (Re-entry simulation) - UPDATED TO CONTINUOUS EFFECT
 	modifiers := map[string]domain.ContinuousEffect{"energy": {Amount: -40.0}}
 	limits := map[string]float64{"energy": 100.0}
 
 	utilityEngine.ApplyModifiersToMeters("test_actor", modifiers, limits)
 
-	// Fast check ignoring the tiny decay that happened during Process
 	currentEnergy := utilityEngine.meters["test_actor"]["energy"]
-	if currentEnergy > 10.1 { // Should be ~10.0 (50 - 40)
+	if currentEnergy > 10.1 {
 		t.Errorf("Expected energy ~10.0 after modifier, got %.2f", currentEnergy)
 	}
 
-	// 2. Test Hard Reset (Burnout Snap)
 	utilityEngine.ResetMeters("test_actor", map[string]float64{"energy": 100.0})
 
 	if utilityEngine.meters["test_actor"]["energy"] != 100.0 {
@@ -53,7 +47,6 @@ func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
 }
 
 func TestUtilityEngine_EmergentBehavior(t *testing.T) {
-	// Setup Blueprint with upgraded ActionFill struct
 	blueprint := &domain.NodeArchetype{
 		Meters: []domain.MeterTemplate{
 			{MeterID: "hunger", Max: 100.0, BaseDecayPerHour: 10.0, Curve: "linear"},
@@ -76,8 +69,8 @@ func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 				Type:    "adult",
 				AIModel: "utility",
 				StartingMeters: map[string]float64{
-					"hunger": 20.0, // VERY HUNGRY (Max 100)
-					"energy": 10.0, // VERY TIRED
+					"hunger": 20.0,
+					"energy": 10.0,
 				},
 			},
 		},
@@ -96,8 +89,8 @@ func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 		t.Fatalf("Expected 1 active actor, got %d", len(activeActors))
 	}
 
-	if activeActors[0] != "wfh_worker:cook_dinner" {
-		t.Errorf("Expected wfh_worker to choose cook_dinner, got %s", activeActors[0])
+	if activeActors[0].ActorID != "wfh_worker" || activeActors[0].ActionID != "cook_dinner" {
+		t.Errorf("Expected wfh_worker to choose cook_dinner, got %v", activeActors[0])
 	}
 }
 
@@ -125,8 +118,8 @@ func TestUtilityEngine_GetActionUrgency(t *testing.T) {
 	ue := NewUtilityEngine(sampler)
 
 	ue.Process(state, nil, 1*time.Minute)
-	ue.meters["hungry_actor"]["hunger"] = 20.0 // Deficit: 80
-	ue.meters["full_actor"]["hunger"] = 100.0  // Deficit: 0
+	ue.meters["hungry_actor"]["hunger"] = 20.0
+	ue.meters["full_actor"]["hunger"] = 100.0
 
 	hungryUrgency := ue.GetActionUrgency("hungry_actor", "cook_meal", state)
 	expectedHungry := 48.0
@@ -151,13 +144,11 @@ func TestUtilityEngine_GetActorSnapshot(t *testing.T) {
 		"hunger": 30.0,
 	}
 
-	// 1. Fetch the localized snapshot
 	snapshot := ue.GetActorSnapshot(actorID)
 	if snapshot == nil {
 		t.Fatalf("Expected a snapshot, got nil")
 	}
 
-	// 2. Verify prefix mapping
 	if val, ok := snapshot["actor.energy"].(float64); !ok || val != 80.0 {
 		t.Errorf("Expected actor.energy to be 80.0, got %v", snapshot["actor.energy"])
 	}
@@ -165,14 +156,12 @@ func TestUtilityEngine_GetActorSnapshot(t *testing.T) {
 		t.Errorf("Expected actor.hunger to be 30.0, got %v", snapshot["actor.hunger"])
 	}
 
-	// 3. Verify internal state protection
-	snapshot["actor.energy"] = 10.0 // Attempt to mutate
+	snapshot["actor.energy"] = 10.0
 	if ue.meters[actorID]["energy"] == 10.0 {
 		t.Errorf("GetActorSnapshot leaked internal state reference! Internal map was mutated.")
 	}
 }
 
-// --- UPDATED FOR NEW SIGNATURE ---
 func TestUtilityEngine_ForceTask(t *testing.T) {
 	sampler := generator.NewSampler([32]byte{})
 	ue := NewUtilityEngine(sampler)
@@ -201,7 +190,6 @@ func TestUtilityEngine_ForceTask(t *testing.T) {
 	ue.ResetMeters("actor1", blueprint.Actors[0].StartingMeters)
 
 	sleepDuration := 8 * time.Hour
-	// Note: We supply the map directly, avoiding reliance on looking it up from engine state
 	satisfies := map[string]domain.ActionFill{
 		"energy": {Amount: 50.0, Curve: "linear"},
 	}
@@ -212,7 +200,7 @@ func TestUtilityEngine_ForceTask(t *testing.T) {
 	state.SimTime = state.SimTime.Add(tickDuration)
 	activeActors, _, _ := ue.Process(state, nil, tickDuration)
 
-	if len(activeActors) == 0 || activeActors[0] != "actor1:night_sleep" {
+	if len(activeActors) == 0 || activeActors[0].ActorID != "actor1" || activeActors[0].ActionID != "night_sleep" {
 		t.Errorf("Expected actor to report night_sleep, got %v", activeActors)
 	}
 
@@ -222,7 +210,6 @@ func TestUtilityEngine_ForceTask(t *testing.T) {
 		t.Fatalf("Expected actor.energy in snapshot")
 	}
 
-	// 50.0 start + (~0.104 fill) - (0.1 decay) = ~50.004
 	if energy.(float64) <= 50.0 {
 		t.Errorf("Expected energy to start recovering during forced task, got %f", energy.(float64))
 	}
@@ -242,13 +229,13 @@ func TestUtilityEngine_IntentSuppression(t *testing.T) {
 		},
 		Actions: []domain.ActionTemplate{
 			{
-				ActionID: "eat_snack", // High utility, solves hunger
+				ActionID: "eat_snack",
 				Satisfies: map[string]domain.ActionFill{
 					"hunger": {Amount: 50, Curve: "linear"},
 				},
 			},
 			{
-				ActionID: "read_book", // Low utility, solves leisure
+				ActionID: "read_book",
 				Satisfies: map[string]domain.ActionFill{
 					"leisure": {Amount: 20, Curve: "linear"},
 				},
@@ -272,19 +259,16 @@ func TestUtilityEngine_IntentSuppression(t *testing.T) {
 		},
 	}
 
-	// Actor is starving and bored
 	ue.ResetMeters("actor_1", map[string]float64{"hunger": 10, "leisure": 80})
 
 	snapshot := make(parsers.StateSnapshot)
 
-	// Run normally without commitments
 	ue.Process(state, snapshot, time.Minute)
 
 	if ue.activeAction["actor_1"] != "eat_snack" {
 		t.Fatalf("Expected actor to choose eat_snack, chose %s", ue.activeAction["actor_1"])
 	}
 
-	// Clear action and set up an Intent Lock using engine.Commitment
 	delete(ue.activeAction, "actor_1")
 	state.Actors["actor_1"].CurrentCommitment = &engine.Commitment{
 		ActionID:  "family_dinner",
@@ -292,7 +276,6 @@ func TestUtilityEngine_IntentSuppression(t *testing.T) {
 		ExpiresAt: state.SimTime.Add(2 * time.Hour),
 	}
 
-	// Run again. The actor should ignore 'eat_snack' and fall back to 'read_book'
 	ue.Process(state, snapshot, time.Minute)
 
 	if ue.activeAction["actor_1"] != "read_book" {
@@ -317,7 +300,6 @@ func TestUtilityEngine_InterruptCurrentTask(t *testing.T) {
 		},
 	}
 
-	// Test 1: Interrupting an interruptible task
 	ue.activeAction["actor_1"] = "interruptible_task"
 	ue.activeTasks["actor_1"] = &ActiveTask{}
 
@@ -329,7 +311,6 @@ func TestUtilityEngine_InterruptCurrentTask(t *testing.T) {
 		t.Fatal("Task was not cleared from ActiveAction")
 	}
 
-	// Test 2: Failing to interrupt a locked task
 	ue.activeAction["actor_1"] = "locked_task"
 	ue.activeTasks["actor_1"] = &ActiveTask{}
 

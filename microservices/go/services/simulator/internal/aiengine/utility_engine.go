@@ -279,8 +279,8 @@ func calculateCurveIntegral(curve string, p float64) float64 {
 	}
 }
 
-func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
-	var activeHumanActors []string
+func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]engine.ActorTickState, []string, []string) {
+	var activeHumanActors []engine.ActorTickState
 	var anomalies []string
 	var debugLogs []string
 
@@ -335,7 +335,10 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 
 		// 2. ACTIVE TASK EVALUATION
 		if state.SimTime.Before(actorLedger.StateEndsAt) {
-			activeHumanActors = append(activeHumanActors, actor.ActorID+":"+ue.activeAction[actor.ActorID])
+			activeHumanActors = append(activeHumanActors, engine.ActorTickState{
+				ActorID:  actor.ActorID,
+				ActionID: ue.activeAction[actor.ActorID],
+			})
 
 			if task, exists := ue.activeTasks[actor.ActorID]; exists {
 				elapsedNow := state.SimTime.Sub(task.StartTime)
@@ -398,7 +401,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 				continue
 			}
 
-			// --- ORGANIC SATIETY: THE "PRIMARY PURPOSE" GATE ---
 			var primaryMeter string
 			var maxFill float64 = -1.0
 			for m, fill := range template.Satisfies {
@@ -413,15 +415,11 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 				maxVal := maxMeters[primaryMeter]
 				deficit := maxVal - currentVal
 
-				// If they are >90% full on the primary reason for this action, they physically cannot do it.
-				// This instantly kills chain-eating, regardless of Gaussian time bonuses.
 				if deficit < (maxVal * 0.1) {
 					continue
 				}
 			}
-			// ---------------------------------------------------
 
-			// PHYSICAL DEVICE LOCK CHECK
 			if template.DeviceID != "" {
 				isDeviceLocked := false
 
@@ -438,7 +436,7 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 
 				if isDeviceLocked {
 					if template.Sharing == nil || template.Sharing.Type != domain.SharingFreeRider {
-						continue // Device is busy, action unavailable
+						continue
 					}
 				}
 			}
@@ -587,7 +585,10 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 				}
 
 				actorLedger.StateEndsAt = state.SimTime.Add(duration)
-				activeHumanActors = append(activeHumanActors, actor.ActorID+":"+actionID)
+				activeHumanActors = append(activeHumanActors, engine.ActorTickState{
+					ActorID:  actor.ActorID,
+					ActionID: actionID,
+				})
 			}
 		}
 	}

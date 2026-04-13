@@ -11,12 +11,12 @@ import (
 )
 
 type MockAIEngine struct {
-	ActiveActors      []string
+	ActiveActors      []engine.ActorTickState
 	InterruptedActors []string
 	UrgencyScore      float64
 }
 
-func (m *MockAIEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
+func (m *MockAIEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]engine.ActorTickState, []string, []string) {
 	return m.ActiveActors, []string{}, []string{}
 }
 
@@ -51,7 +51,7 @@ func (m MockGrid) RecordDraw(watts float64, t time.Time) {}
 func TestOrchestrator_GatheringWindow(t *testing.T) {
 	sampler := generator.NewSampler([32]byte{})
 	ai := &MockAIEngine{
-		ActiveActors: []string{"actor_1:make_tea"},
+		ActiveActors: []engine.ActorTickState{{ActorID: "actor_1", ActionID: "make_tea"}},
 		UrgencyScore: 0.5,
 	}
 	orch := NewOrchestrator(ai, sampler)
@@ -85,7 +85,6 @@ func TestOrchestrator_GatheringWindow(t *testing.T) {
 		},
 	}
 
-	// Tick 1: Initiator triggers the intent
 	orch.Tick(state, time.Minute, MockWeather{}, MockGrid{})
 
 	if len(state.House.PendingEvents) != 1 {
@@ -109,7 +108,6 @@ func TestOrchestrator_GatheringWindow(t *testing.T) {
 		t.Fatal("actor_2 should have a locked CurrentCommitment while waiting")
 	}
 
-	// Advance time to close window
 	orch.Tick(state, 5*time.Minute, MockWeather{}, MockGrid{})
 
 	if !ev.IsExecuting {

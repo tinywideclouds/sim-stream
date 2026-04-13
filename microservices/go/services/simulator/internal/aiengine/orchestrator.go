@@ -14,13 +14,6 @@ import (
 
 const logTimeFormat = "Mon 15:04"
 
-type ActorTickState struct {
-	ActorID  string
-	ActionID string
-	IsShared bool
-	Meters   map[string]float64
-}
-
 type TickResult struct {
 	Timestamp       time.Time
 	GridVoltage     float64
@@ -30,13 +23,13 @@ type TickResult struct {
 	IndoorTempC     float64
 	TankTempC       float64
 	ActiveDevices   []string
-	ActiveActors    []ActorTickState
+	ActiveActors    []engine.ActorTickState
 	Anomalies       []string
 	DebugLog        []string
 }
 
 type AIEngine interface {
-	Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string)
+	Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]engine.ActorTickState, []string, []string)
 	InterruptCurrentTask(actorID string, state *engine.SimulationState) bool
 	GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64
 	ForceTask(actorID string, taskName string, duration time.Duration, startTime time.Time, satisfies map[string]domain.ActionFill)
@@ -72,21 +65,15 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 
 	activeAmbientActors := engine.ProcessAmbientSystems(state, snapshot, o.sampler)
 
-	// --- Convert raw string outputs into structured ActorTickState objects ---
-	var finalActors []ActorTickState
+	// --- Enrich the structured ActorTickState objects ---
+	var finalActors []engine.ActorTickState
 
-	for _, actStr := range activeHumanActors {
-		parts := strings.Split(actStr, ":")
-		if len(parts) != 2 {
-			continue
-		}
-		actorID, actionID := parts[0], parts[1]
-
+	for _, act := range activeHumanActors {
 		isShared := false
 		for _, ev := range state.House.PendingEvents {
-			if ev.IsExecuting && ev.ActionID == actionID {
+			if ev.IsExecuting && ev.ActionID == act.ActionID {
 				for _, p := range ev.Participants {
-					if p == actorID {
+					if p == act.ActorID {
 						if len(ev.Participants) > 1 {
 							isShared = true
 						}
@@ -95,9 +82,10 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 				}
 			}
 		}
+		act.IsShared = isShared
 
 		meters := make(map[string]float64)
-		snap := o.humanAI.GetActorSnapshot(actorID)
+		snap := o.humanAI.GetActorSnapshot(act.ActorID)
 		if snap != nil {
 			for k, v := range snap {
 				if strings.HasPrefix(k, "actor.") {
@@ -107,19 +95,15 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 				}
 			}
 		}
+		act.Meters = meters
 
-		finalActors = append(finalActors, ActorTickState{
-			ActorID:  actorID,
-			ActionID: actionID,
-			IsShared: isShared,
-			Meters:   meters,
-		})
+		finalActors = append(finalActors, act)
 	}
 
 	for _, actStr := range activeAmbientActors {
 		parts := strings.Split(actStr, ":")
 		if len(parts) == 2 {
-			finalActors = append(finalActors, ActorTickState{
+			finalActors = append(finalActors, engine.ActorTickState{
 				ActorID:  parts[0],
 				ActionID: parts[1],
 				IsShared: false,
@@ -151,7 +135,6 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 		GridVoltage:     physics.GridVoltage,
 		TotalWatts:      physics.TotalWatts,
 		TotalColdLiters: physics.ColdLiters,
-		TotalHotLiters:  physics.HotLiters,
 		IndoorTempC:     state.IndoorTempC,
 		TankTempC:       state.HotWaterTankC,
 		ActiveDevices:   physics.ActiveDevices,
@@ -161,24 +144,18 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 	}
 }
 
-func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activeHumanActors []string) {
+func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activeHumanActors []engine.ActorTickState) {
 	simLogger := slog.With("sim_time", state.SimTime.Format(logTimeFormat))
 
 	if state.House.PendingEvents == nil {
 		state.House.PendingEvents = make(map[string]*engine.PendingEvent)
 	}
 
-	for _, str := range activeHumanActors {
-		parts := strings.Split(str, ":")
-		if len(parts) != 2 {
-			continue
-		}
-		actorID, actionID := parts[0], parts[1]
-
+	for _, act := range activeHumanActors {
 		var template *domain.ActionTemplate
-		for _, act := range state.Blueprint.Actions {
-			if act.ActionID == actionID {
-				template = &act
+		for _, tpl := range state.Blueprint.Actions {
+			if tpl.ActionID == act.ActionID {
+				template = &tpl
 				break
 			}
 		}
@@ -188,9 +165,9 @@ func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activ
 
 		eventFound := false
 		for _, ev := range state.House.PendingEvents {
-			if ev.ActionID == actionID {
+			if ev.ActionID == act.ActionID {
 				for _, p := range ev.Participants {
-					if p == actorID {
+					if p == act.ActorID {
 						eventFound = true
 						break
 					}
@@ -204,11 +181,11 @@ func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activ
 			continue
 		}
 
-		eventID := fmt.Sprintf("%s_%s_%d", actionID, actorID, state.SimTime.Unix())
+		eventID := fmt.Sprintf("%s_%s_%d", act.ActionID, act.ActorID, state.SimTime.Unix())
 		gatheringDuration, _ := time.ParseDuration(template.Sharing.GatheringWindow)
 
 		var endsAt time.Time
-		if ledger, ok := state.Actors[actorID]; ok {
+		if ledger, ok := state.Actors[act.ActorID]; ok {
 			endsAt = ledger.StateEndsAt
 		} else {
 			endsAt = state.SimTime.Add(15 * time.Minute)
@@ -216,10 +193,10 @@ func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activ
 
 		ev := &engine.PendingEvent{
 			EventID:         eventID,
-			ActionID:        actionID,
+			ActionID:        act.ActionID,
 			DeviceID:        template.DeviceID,
-			InitiatorID:     actorID,
-			Participants:    []string{actorID},
+			InitiatorID:     act.ActorID,
+			Participants:    []string{act.ActorID},
 			GatheringEndsAt: state.SimTime.Add(gatheringDuration),
 			IsExecuting:     false,
 		}
@@ -229,13 +206,13 @@ func (o *Orchestrator) handleSharingIntents(state *engine.SimulationState, activ
 			ev.GatheringEndsAt = endsAt
 		} else if gatheringDuration > 0 {
 
-			simLogger.Info("GATHERING WINDOW OPENED", "event", eventID, "action", actionID, "initiator", actorID, "duration", gatheringDuration)
+			simLogger.Info("GATHERING WINDOW OPENED", "event", eventID, "action", act.ActionID, "initiator", act.ActorID, "duration", gatheringDuration)
 
-			o.humanAI.InterruptCurrentTask(actorID, state)
+			o.humanAI.InterruptCurrentTask(act.ActorID, state)
 
-			if ledger, ok := state.Actors[actorID]; ok {
+			if ledger, ok := state.Actors[act.ActorID]; ok {
 				ledger.CurrentCommitment = &engine.Commitment{
-					ActionID:  actionID,
+					ActionID:  act.ActionID,
 					Role:      "lead",
 					ExpiresAt: ev.GatheringEndsAt.Add(2 * time.Hour),
 				}

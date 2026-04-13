@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
 	"github.com/tinywideclouds/go-power-simulator/internal/engine"
@@ -17,7 +16,7 @@ const hourMinute = "15:04"
 type UtilityBrain interface {
 	ResetMeters(actorID string, startingMeters map[string]float64)
 	ApplyModifiersToMeters(actorID string, modifiers map[string]domain.ContinuousEffect, limits map[string]float64)
-	Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string)
+	Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]engine.ActorTickState, []string, []string)
 	HasMeters(actorID string, costs map[string]float64) bool
 
 	GetInterruptAction(actorID string, state *engine.SimulationState) string
@@ -158,7 +157,6 @@ func (se *StableEngine) calculateSleepPhase(actor domain.Actor, phase domain.Pha
 func (se *StableEngine) calculateGenericPhase(actor domain.Actor, phase domain.Phase, state *engine.SimulationState, dayType string) (time.Time, time.Time, time.Duration, time.Duration) {
 	anchor, _ := time.Parse(hourMinute, phase.AnchorTime)
 
-	// 1. Assume the phase belongs to TODAY
 	baseStart := time.Date(state.SimTime.Year(), state.SimTime.Month(), state.SimTime.Day(), anchor.Hour(), anchor.Minute(), 0, 0, state.SimTime.Location())
 
 	baseDuration, _ := se.sampler.Duration(phase.Duration.ProbabilityDistribution)
@@ -179,12 +177,10 @@ func (se *StableEngine) calculateGenericPhase(actor domain.Actor, phase domain.P
 	actualStart := baseStart.Add(startShift)
 	actualEnd := actualStart.Add(baseDuration)
 
-	// 2. THE FIX: Only push to tomorrow if today's shift has completely finished
 	if state.SimTime.After(actualEnd) {
 		actualStart = actualStart.Add(24 * time.Hour)
 		actualEnd = actualEnd.Add(24 * time.Hour)
 	} else if state.SimTime.Before(actualStart.Add(-12 * time.Hour)) {
-		// Edge case: If we are evaluating a late-night shift way too early in the morning
 		actualStart = actualStart.Add(-24 * time.Hour)
 		actualEnd = actualEnd.Add(-24 * time.Hour)
 	}
@@ -192,8 +188,8 @@ func (se *StableEngine) calculateGenericPhase(actor domain.Actor, phase domain.P
 	return actualStart, actualEnd, startShift, endShift
 }
 
-func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
-	var activeActors []string
+func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tickDuration time.Duration) ([]engine.ActorTickState, []string, []string) {
+	var activeActors []engine.ActorTickState
 	var anomalies []string
 	var debugLogs []string
 
@@ -448,7 +444,7 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 				if interrupt == "" {
 					taskName := se.routineBrain.ProcessActor(actor.ActorID, state, tickDuration, mergedSnapshot)
 					if taskName != "" {
-						activeActors = append(activeActors, actor.ActorID+":"+taskName)
+						activeActors = append(activeActors, engine.ActorTickState{ActorID: actor.ActorID, ActionID: taskName})
 					}
 					continue
 				}
@@ -464,11 +460,8 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 
 	// --- WFH VETO AND RESUMPTION LOGIC ---
 	currentActions := make(map[string]string)
-	for _, actStr := range activeActors {
-		parts := strings.Split(actStr, ":")
-		if len(parts) == 2 {
-			currentActions[parts[0]] = parts[1]
-		}
+	for _, act := range activeActors {
+		currentActions[act.ActorID] = act.ActionID
 	}
 
 	simLogger := slog.With("sim_time", state.SimTime.Format("Mon 15:04"))
@@ -516,7 +509,6 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 			isNecessary := false
 			if chosenTemplate != nil {
 				for meterID, fill := range chosenTemplate.Satisfies {
-					// WFH worker is allowed biological breaks, but nothing else.
 					if (meterID == "hunger" || meterID == "hygiene" || meterID == "energy") && fill.Amount > 0 {
 						isNecessary = true
 						break
@@ -550,15 +542,15 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 				ledger.StateEndsAt = state.SimTime.Add(remainingDuration)
 
 				foundInArray := false
-				for i, actStr := range activeActors {
-					if strings.HasPrefix(actStr, actorID+":") {
-						activeActors[i] = actorID + ":" + phaseID
+				for i, act := range activeActors {
+					if act.ActorID == actorID {
+						activeActors[i].ActionID = phaseID
 						foundInArray = true
 						break
 					}
 				}
 				if !foundInArray {
-					activeActors = append(activeActors, actorID+":"+phaseID)
+					activeActors = append(activeActors, engine.ActorTickState{ActorID: actorID, ActionID: phaseID})
 				}
 
 				if isBusy {
@@ -569,7 +561,6 @@ func (se *StableEngine) Process(state *engine.SimulationState, snapshot parsers.
 			}
 		}
 	}
-	// -------------------------------------
 
 	return activeActors, anomalies, debugLogs
 }

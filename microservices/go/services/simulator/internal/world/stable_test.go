@@ -25,7 +25,7 @@ func (m *MockUtility) ResetMeters(actorID string, starting map[string]float64) {
 
 func (m *MockUtility) ApplyModifiersToMeters(actorID string, mods map[string]domain.ContinuousEffect, limits map[string]float64) {
 }
-func (m *MockUtility) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tick time.Duration) ([]string, []string, []string) {
+func (m *MockUtility) Process(state *engine.SimulationState, snapshot parsers.StateSnapshot, tick time.Duration) ([]engine.ActorTickState, []string, []string) {
 	return nil, nil, nil
 }
 func (m *MockUtility) HasMeters(actorID string, costs map[string]float64) bool { return m.canAfford }
@@ -33,13 +33,12 @@ func (m *MockUtility) GetInterruptAction(actorID string, state *engine.Simulatio
 	return ""
 }
 func (m *MockUtility) GetActionUrgency(actorID string, actionID string, state *engine.SimulationState) float64 {
-	return 0.5 // Neutral tension -> ensures 0 shift for deterministic tests
+	return 0.5
 }
 func (m *MockUtility) GetActorSnapshot(actorID string) parsers.StateSnapshot {
-	return parsers.StateSnapshot{"actor.energy": 50.0} // Neutral energy urgency
+	return parsers.StateSnapshot{"actor.energy": 50.0}
 }
 
-// BUGFIX: Added missing interface method so MockUtility correctly implements UtilityBrain
 func (m *MockUtility) InterruptCurrentTask(actorID string, state *engine.SimulationState) bool {
 	return true
 }
@@ -83,7 +82,7 @@ func TestStableEngine_Arbitration_Success(t *testing.T) {
 
 	active, _, _ := stableEngine.Process(state, make(parsers.StateSnapshot), 1*time.Minute)
 
-	if len(active) == 0 || active[0] != "parent:cooking" {
+	if len(active) == 0 || active[0].ActorID != "parent" || active[0].ActionID != "cooking" {
 		t.Errorf("Expected actor to successfully execute V2 routine, got %v", active)
 	}
 }
@@ -152,7 +151,6 @@ func TestStableEngine_AwayGhosting(t *testing.T) {
 	snapshot := make(parsers.StateSnapshot)
 	tickDuration := 1 * time.Minute
 
-	// Tick 1 (08:30) - Should trigger the Away phase
 	state.SimTime = state.SimTime.Add(tickDuration)
 	stableEngine.Process(state, snapshot, tickDuration)
 
@@ -192,7 +190,6 @@ func TestStableEngine_SleepGhosting(t *testing.T) {
 	snapshot := make(parsers.StateSnapshot)
 	tickDuration := 1 * time.Minute
 
-	// Tick 1 (20:00) - Should trigger the Sleep phase
 	state.SimTime = state.SimTime.Add(tickDuration)
 	stableEngine.Process(state, snapshot, tickDuration)
 
@@ -215,7 +212,7 @@ func TestCalculatePhaseTimes_Sleep(t *testing.T) {
 	actor := domain.Actor{
 		ActorID: "test_actor",
 		Phases: []domain.Phase{
-			{Type: "away"}, // Creates the workday wall
+			{Type: "away"},
 		},
 	}
 
@@ -233,7 +230,6 @@ func TestCalculatePhaseTimes_Sleep(t *testing.T) {
 
 	start, end, _, _ := se.CalculatePhaseTimes(actor, phase, state, "workday")
 
-	// Urgency is 0.5 (neutral from MockUtility), so factor is 0, shifts should be 0
 	expectedStart := time.Date(2026, 1, 1, 23, 0, 0, 0, time.UTC)
 	expectedEnd := expectedStart.Add(8 * time.Hour)
 

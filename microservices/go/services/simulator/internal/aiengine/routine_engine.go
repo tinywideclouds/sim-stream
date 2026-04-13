@@ -33,11 +33,6 @@ func NewRoutineEngine(s *generator.Sampler, rolloverHour int) *RoutineEngine {
 	}
 }
 
-// ------------------------------------------------------------------
-// ADAPTER APIs FOR THE STABLE ENGINE (ARBITER)
-// ------------------------------------------------------------------
-
-// GetActiveRoutineAction dynamically shifts the routine time using the live snapshot.
 func (re *RoutineEngine) GetActiveRoutineAction(actorID string, simTime time.Time, snap parsers.StateSnapshot) (string, string, bool) {
 	actorPlan, exists := re.dailyPlan[actorID]
 	if !exists {
@@ -45,7 +40,6 @@ func (re *RoutineEngine) GetActiveRoutineAction(actorID string, simTime time.Tim
 	}
 
 	for rID, routinePlan := range actorPlan {
-		// LIVE ELASTICITY: Calculate biological warp delta
 		shift, _ := parsers.CalculateShiftDuration(routinePlan.Modifiers, snap)
 		liveStart := routinePlan.TargetStart.Add(shift)
 		liveDeadline := routinePlan.TargetDeadline.Add(shift)
@@ -123,10 +117,8 @@ func (re *RoutineEngine) ProcessActor(actorID string, state *engine.SimulationSt
 	return ""
 }
 
-// ------------------------------------------------------------------
-
-func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.StateSnapshot, tickDuration time.Duration) ([]string, []string, []string) {
-	var activeHumanActors []string
+func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.StateSnapshot, tickDuration time.Duration) ([]engine.ActorTickState, []string, []string) {
+	var activeHumanActors []engine.ActorTickState
 
 	logicalDay := state.SimTime
 	if state.SimTime.Hour() < re.rolloverHour {
@@ -190,7 +182,7 @@ func (re *RoutineEngine) Process(state *engine.SimulationState, snap parsers.Sta
 						taskName = tpl.Tasks[idx]
 					}
 				}
-				activeHumanActors = append(activeHumanActors, actorTpl.ActorID+":"+taskName)
+				activeHumanActors = append(activeHumanActors, engine.ActorTickState{ActorID: actorTpl.ActorID, ActionID: taskName})
 			}
 		}
 	}
