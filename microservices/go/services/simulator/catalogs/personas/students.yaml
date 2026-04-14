@@ -3,20 +3,35 @@ personas:
   - id: "student_early_lectures"
     type: "adult"
     traits: ["disciplined"]
-    starting_meters: { energy: 70.0, hunger: 50.0, hygiene: 50.0, leisure: 50.0 }
+    frequency: 20
+    starting_meters:
+      energy: { type: "normal", mean: "70.0", std_dev: "5.0" }
+      hunger: { type: "normal", mean: "50.0", std_dev: "5.0" }
+      hygiene: { type: "normal", mean: "50.0", std_dev: "5.0" }
+      leisure: { type: "normal", mean: "50.0", std_dev: "5.0" }
+    biology:
+      energy:
+        decay_per_hour: { type: "normal", mean: "4.5", std_dev: "0.5" }
+        phase_multipliers: { sleep: -10.0 }
+      hunger:
+        decay_per_hour: { type: "normal", mean: "5.5", std_dev: "0.5" }
+        phase_multipliers: { sleep: 0.1 }
+      hygiene:
+        decay_per_hour: { type: "normal", mean: "2.5", std_dev: "0.2" }
+      leisure:
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.5" }
     phases:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "23:30"
         gravity: 0.2
         duration:
-          type: 3
+          type: "constant"
           value: "7h"
           flexibility: "2h"
         modifiers:
           application: "continuous"
           effects:
-            energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
             hygiene: { amount: -15.0, over: "7h", curve: "linear" }
             leisure: { amount: 5.0, over: "7h", curve: "linear" }
       - phase_id: "university"
@@ -24,35 +39,48 @@ personas:
         anchor_time: "08:30"
         gravity: 0.9
         duration: 
-          type: 1 
+          type: "normal" 
           mean: "6h"
           std_dev: "45m"
           flexibility: "30m"
         modifiers:
           application: "block_end"
           effects: 
-            energy: { amount: -40.0, over: "6h", curve: "linear" }
-            hunger: { amount: -60.0, over: "6h", curve: "linear" }
             hygiene: { amount: -20.0, over: "6h", curve: "linear" }
             leisure: { amount: -30.0, over: "6h", curve: "linear" }
 
   - id: "student_night_owl"
     type: "adult"
     traits: ["lazy", "chaotic"]
-    starting_meters: { energy: 20.0, hunger: 20.0, hygiene: 30.0, leisure: 60.0 }
+    frequency: 25
+    starting_meters:
+      energy: { type: "normal", mean: "20.0", std_dev: "10.0" }
+      hunger: { type: "normal", mean: "20.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "30.0", std_dev: "10.0" }
+      leisure: { type: "normal", mean: "60.0", std_dev: "10.0" }
+    biology:
+      energy:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "1.0" }
+        phase_multipliers: { sleep: -9.0 }
+      hunger:
+        decay_per_hour: { type: "normal", mean: "6.0", std_dev: "1.0" }
+        phase_multipliers: { sleep: 0.1 }
+      hygiene:
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.5" }
+      leisure:
+        decay_per_hour: { type: "normal", mean: "6.0", std_dev: "1.0" }
     phases:
       - phase_id: "late_sleep"
         type: "sleep"
         anchor_time: "03:00"
         gravity: 0.2
         duration:
-          type: 3
+          type: "constant"
           value: "8h"
           flexibility: "3h"
         modifiers:
           application: "continuous"
           effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "late_lectures"
@@ -60,198 +88,12 @@ personas:
         anchor_time: "13:00"
         gravity: 0.8
         duration: 
-          type: 1 
+          type: "normal" 
           mean: "5h"
           std_dev: "60m"
           flexibility: "1h"
         modifiers:
           application: "block_end"
           effects: 
-            energy: { amount: -30.0, over: "5h", curve: "linear" }
-            hunger: { amount: -40.0, over: "5h", curve: "linear" }
             hygiene: { amount: -20.0, over: "5h", curve: "linear" }
             leisure: { amount: -20.0, over: "5h", curve: "linear" }
-
-  - id: "student_home_studier"
-    type: "adult"
-    traits: ["disciplined", "anxious"]
-    starting_meters: { energy: 80.0, hunger: 60.0, hygiene: 60.0, leisure: 30.0 }
-    phases: 
-      - phase_id: "night_sleep"
-        type: "sleep"
-        anchor_time: "00:00"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "7h30m"
-          flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 80.0, over: "7h30m", curve: "front_loaded" }
-            hygiene: { amount: -15.0, over: "7h30m", curve: "linear" }
-            leisure: { amount: 5.0, over: "7h30m", curve: "linear" }
-
-  - id: "student_erratic"
-    type: "adult"
-    traits: ["chaotic"]
-    starting_meters: { energy: 60.0, hunger: 40.0, hygiene: 40.0, leisure: 40.0 }
-    phases:
-      - phase_id: "erratic_sleep"
-        type: "sleep"
-        anchor_time: "01:30"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "7h"
-          flexibility: "3h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
-            hygiene: { amount: -15.0, over: "7h", curve: "linear" }
-            leisure: { amount: 5.0, over: "7h", curve: "linear" }
-      - phase_id: "erratic_campus_day"
-        type: "away"
-        anchor_time: "10:00"
-        gravity: 0.6
-        duration: 
-          type: 1 
-          mean: "8h"
-          std_dev: "120m"
-          flexibility: "2h"
-        modifiers:
-          application: "block_end"
-          effects: 
-            energy: { amount: -60.0, over: "8h", curve: "linear" }
-            hunger: { amount: -30.0, over: "8h", curve: "linear" }
-            hygiene: { amount: -30.0, over: "8h", curve: "linear" }
-            leisure: { amount: 20.0, over: "8h", curve: "linear" }
-
-  - id: "student_gamer"
-    type: "adult"
-    traits: ["lazy"]
-    starting_meters: { energy: 50.0, hunger: 40.0, hygiene: 30.0, leisure: 10.0 }
-    phases:
-      - phase_id: "gamer_sleep"
-        type: "sleep"
-        anchor_time: "04:00"
-        gravity: 0.1
-        duration:
-          type: 3
-          value: "6h"
-          flexibility: "4h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
-            hygiene: { amount: -10.0, over: "6h", curve: "linear" }
-            leisure: { amount: 5.0, over: "6h", curve: "linear" }
-      - phase_id: "minimal_lectures"
-        type: "away"
-        anchor_time: "11:00"
-        gravity: 0.7
-        duration: 
-          type: 1 
-          mean: "3h"
-          std_dev: "20m"
-          flexibility: "1h"
-        modifiers:
-          application: "block_end"
-          effects: 
-            energy: { amount: -20.0, over: "3h", curve: "linear" }
-            hunger: { amount: -40.0, over: "3h", curve: "linear" }
-            hygiene: { amount: -10.0, over: "3h", curve: "linear" }
-            leisure: { amount: -20.0, over: "3h", curve: "linear" }
-
-  - id: "student_part_time_job"
-    type: "adult"
-    traits: ["disciplined"]
-    starting_meters: { energy: 60.0, hunger: 50.0, hygiene: 50.0, leisure: 20.0 }
-    phases:
-      - phase_id: "exhausted_sleep"
-        type: "sleep"
-        anchor_time: "22:30"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "8h"
-          flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 85.0, over: "8h", curve: "front_loaded" }
-            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
-            leisure: { amount: 5.0, over: "8h", curve: "linear" }
-      - phase_id: "work_and_study"
-        type: "away"
-        anchor_time: "09:00"
-        gravity: 0.95
-        duration: 
-          type: 1 
-          mean: "10h"
-          std_dev: "30m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects: 
-            energy: { amount: -80.0, over: "10h", curve: "linear" }
-            hunger: { amount: -80.0, over: "10h", curve: "linear" }
-            hygiene: { amount: -50.0, over: "10h", curve: "linear" }
-            leisure: { amount: -40.0, over: "10h", curve: "linear" }
-
-  - id: "student_social"
-    type: "adult"
-    traits: ["chaotic"]
-    starting_meters: { energy: 40.0, hunger: 50.0, hygiene: 40.0, leisure: 80.0 }
-    phases:
-      - phase_id: "party_recovery_sleep"
-        type: "sleep"
-        anchor_time: "02:00"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "8h"
-          flexibility: "3h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
-            leisure: { amount: 5.0, over: "8h", curve: "linear" }
-      - phase_id: "campus_and_pub"
-        type: "away"
-        anchor_time: "11:30"
-        gravity: 0.7
-        duration: 
-          type: 1 
-          mean: "9h"
-          std_dev: "90m"
-          flexibility: "1h30m"
-        modifiers:
-          application: "block_end"
-          effects: 
-            energy: { amount: -60.0, over: "9h", curve: "linear" }
-            hunger: { amount: -10.0, over: "9h", curve: "linear" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: 60.0, over: "9h", curve: "linear" }
-
-  - id: "student_crammer"
-    type: "adult"
-    traits: ["anxious"]
-    starting_meters: { energy: 30.0, hunger: 30.0, hygiene: 20.0, leisure: 10.0 } 
-    phases: 
-      - phase_id: "nap_sleep"
-        type: "sleep"
-        anchor_time: "04:00"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "4h"
-          flexibility: "1h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 45.0, over: "4h", curve: "front_loaded" }
-            hygiene: { amount: -5.0, over: "4h", curve: "linear" }
-            leisure: { amount: 2.0, over: "4h", curve: "linear" }

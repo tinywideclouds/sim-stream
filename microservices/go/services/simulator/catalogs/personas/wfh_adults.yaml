@@ -3,20 +3,35 @@ personas:
   - id: "wfh_standard"
     type: "adult"
     traits: ["disciplined"] 
-    starting_meters: { energy: 85.0, hunger: 60.0, hygiene: 60.0, leisure: 40.0 }
+    frequency: 20
+    starting_meters:
+      energy: { type: "normal", mean: "85.0", std_dev: "5.0" }
+      hunger: { type: "normal", mean: "60.0", std_dev: "5.0" }
+      hygiene: { type: "normal", mean: "60.0", std_dev: "5.0" }
+      leisure: { type: "normal", mean: "40.0", std_dev: "5.0" }
+    biology:
+      energy:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
+        phase_multipliers: { sleep: -10.0 }
+      hunger:
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.5" }
+        phase_multipliers: { sleep: 0.1 }
+      hygiene:
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
+      leisure:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
     phases: 
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "23:00"
         gravity: 0.2
         duration:
-          type: 3
+          type: "constant"
           value: "8h"
           flexibility: "2h"
         modifiers:
           application: "continuous"
           effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "wfh_session"
@@ -24,148 +39,59 @@ personas:
         anchor_time: "09:00"
         gravity: 0.8
         duration:
-          type: 1
+          type: "normal"
           mean: "8h"
           std_dev: "30m"
           flexibility: "1h"
         modifiers:
           application: "continuous"
           effects:
-            energy: { amount: -40.0, over: "8h", curve: "linear" }
             leisure: { amount: -30.0, over: "8h", curve: "linear" }
 
   - id: "wfh_distracted"
     type: "adult"
     traits: ["chaotic", "lazy"] 
-    starting_meters: { energy: 70.0, hunger: 40.0, hygiene: 40.0, leisure: 20.0 }
+    frequency: 20
+    starting_meters:
+      energy: { type: "normal", mean: "70.0", std_dev: "10.0" }
+      hunger: { type: "normal", mean: "40.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "40.0", std_dev: "10.0" }
+      leisure: { type: "normal", mean: "20.0", std_dev: "10.0" }
+    biology:
+      energy:
+        decay_per_hour: { type: "normal", mean: "3.5", std_dev: "0.5" }
+        phase_multipliers: { sleep: -9.0 }
+      hunger:
+        decay_per_hour: { type: "normal", mean: "5.5", std_dev: "1.0" }
+        phase_multipliers: { sleep: 0.1 }
+      hygiene:
+        decay_per_hour: { type: "normal", mean: "2.5", std_dev: "0.5" }
+      leisure:
+        decay_per_hour: { type: "normal", mean: "6.0", std_dev: "1.0" }
     phases: 
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "00:00"
         gravity: 0.2
         duration:
-          type: 3
+          type: "constant"
           value: "8h"
           flexibility: "3h"
         modifiers:
           application: "continuous"
           effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
             hygiene: { amount: -15.0, over: "8h", curve: "linear" }
             leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "wfh_session"
         type: "wfh"
         anchor_time: "09:30"
-        gravity: 0.5 # Less gravity, more likely to wander off
+        gravity: 0.5 
         duration:
-          type: 1
+          type: "normal"
           mean: "7h30m"
           std_dev: "45m"
           flexibility: "1h30m"
         modifiers:
           application: "continuous"
           effects:
-            energy: { amount: -35.0, over: "7h30m", curve: "linear" }
             leisure: { amount: -40.0, over: "7h30m", curve: "linear" }
-
-  - id: "wfh_workaholic"
-    type: "adult"
-    traits: ["anxious", "disciplined"]
-    starting_meters: { energy: 60.0, hunger: 30.0, hygiene: 50.0, leisure: 10.0 }
-    phases: 
-      - phase_id: "short_sleep"
-        type: "sleep"
-        anchor_time: "01:00"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "6h"
-          flexibility: "1h30m"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
-            hygiene: { amount: -10.0, over: "6h", curve: "linear" }
-            leisure: { amount: 5.0, over: "6h", curve: "linear" }
-      - phase_id: "wfh_session"
-        type: "wfh"
-        anchor_time: "08:00"
-        gravity: 0.95
-        duration:
-          type: 1
-          mean: "10h"
-          std_dev: "1h"
-          flexibility: "30m"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: -60.0, over: "10h", curve: "linear" }
-            leisure: { amount: -50.0, over: "10h", curve: "linear" }
-
-  - id: "wfh_night_owl"
-    type: "adult"
-    traits: ["chaotic"]
-    starting_meters: { energy: 30.0, hunger: 20.0, hygiene: 30.0, leisure: 50.0 }
-    phases: 
-      - phase_id: "day_sleep"
-        type: "sleep"
-        anchor_time: "05:00"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "8h"
-          flexibility: "3h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
-            leisure: { amount: 5.0, over: "8h", curve: "linear" }
-      - phase_id: "wfh_session"
-        type: "wfh"
-        anchor_time: "14:00" # Wakes up late, works late
-        gravity: 0.7
-        duration:
-          type: 1
-          mean: "8h"
-          std_dev: "1h"
-          flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: -40.0, over: "8h", curve: "linear" }
-            leisure: { amount: -30.0, over: "8h", curve: "linear" }
-
-  - id: "wfh_fitness_junkie"
-    type: "adult"
-    traits: ["disciplined"]
-    starting_meters: { energy: 90.0, hunger: 80.0, hygiene: 20.0, leisure: 60.0 } 
-    phases: 
-      - phase_id: "early_sleep"
-        type: "sleep"
-        anchor_time: "21:30"
-        gravity: 0.2
-        duration:
-          type: 3
-          value: "8h"
-          flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
-            leisure: { amount: 5.0, over: "8h", curve: "linear" }
-      - phase_id: "wfh_session"
-        type: "wfh"
-        anchor_time: "08:30"
-        gravity: 0.8
-        duration:
-          type: 1
-          mean: "8h"
-          std_dev: "15m"
-          flexibility: "30m"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: -40.0, over: "8h", curve: "linear" }
-            leisure: { amount: -30.0, over: "8h", curve: "linear" }

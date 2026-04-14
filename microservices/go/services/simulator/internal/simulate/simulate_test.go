@@ -65,24 +65,34 @@ func TestRunner_TimeBasedExecutionAndTransitions(t *testing.T) {
 			{
 				Timestamp: time.Now(),
 				ActiveActors: []engine.ActorTickState{
-					{ActorID: "actor_1", ActionID: "wfh_session", IsShared: false, Meters: map[string]float64{"energy": 80.0}},
+					{ActorID: "actor_1", ActionID: "wfh_session", IsShared: false},
+				},
+				AllHumanMeters: map[string]map[string]float64{
+					"actor_1": {"energy": 80.0},
 				},
 			},
 			{
 				Timestamp: time.Now(),
 				ActiveActors: []engine.ActorTickState{
-					{ActorID: "actor_1", ActionID: "wfh_session", IsShared: false, Meters: map[string]float64{"energy": 75.0}},
+					{ActorID: "actor_1", ActionID: "wfh_session", IsShared: false},
+				},
+				AllHumanMeters: map[string]map[string]float64{
+					"actor_1": {"energy": 75.0},
 				},
 			},
 			{
 				Timestamp: time.Now(),
 				ActiveActors: []engine.ActorTickState{
-					{ActorID: "actor_1", ActionID: "cook_lunch", IsShared: true, Meters: map[string]float64{"energy": 70.0}},
+					{ActorID: "actor_1", ActionID: "cook_lunch", IsShared: true},
+				},
+				AllHumanMeters: map[string]map[string]float64{
+					"actor_1": {"energy": 70.0},
 				},
 			},
 			{
-				Timestamp:    time.Now(),
-				ActiveActors: []engine.ActorTickState{},
+				Timestamp:      time.Now(),
+				ActiveActors:   []engine.ActorTickState{},
+				AllHumanMeters: map[string]map[string]float64{"actor_1": {"energy": 65.0}},
 			},
 		},
 	}
@@ -93,7 +103,8 @@ func TestRunner_TimeBasedExecutionAndTransitions(t *testing.T) {
 		Blueprint: &domain.NodeArchetype{ArchetypeID: "test_house"},
 	}
 
-	err := runner.Run(state, 4*time.Minute, 1*time.Minute, nil, nil)
+	// 1 Minute telemetry on a 1 Minute tick means it logs every single time.
+	err := runner.Run(state, 4*time.Minute, 1*time.Minute, 1*time.Minute, nil, nil)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -102,8 +113,8 @@ func TestRunner_TimeBasedExecutionAndTransitions(t *testing.T) {
 		t.Errorf("Expected 4 power logs, got %d", mockPowerRep.Calls)
 	}
 
-	if mockMeterRep.Calls != 3 {
-		t.Errorf("Expected 3 meter logs, got %d", mockMeterRep.Calls)
+	if mockMeterRep.Calls != 4 {
+		t.Errorf("Expected 4 meter logs, got %d", mockMeterRep.Calls)
 	}
 
 	expectedTransitions := []string{

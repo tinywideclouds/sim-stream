@@ -1,13 +1,13 @@
 package domain
 
 // DistributionType defines the statistical curve used for random sampling.
-type DistributionType int
+type DistributionType string
 
 const (
-	DistributionTypeUnspecified DistributionType = iota
-	DistributionTypeNormal
-	DistributionTypeUniform
-	DistributionTypeConstant
+	DistributionTypeUnspecified DistributionType = ""
+	DistributionTypeNormal      DistributionType = "normal"
+	DistributionTypeUniform     DistributionType = "uniform"
+	DistributionTypeConstant    DistributionType = "constant"
 )
 
 // DeviceCategory classifies what the appliance does for thermodynamic grouping.

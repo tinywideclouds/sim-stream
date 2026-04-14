@@ -3,7 +3,25 @@ personas:
   - id: "office_standard_9to5"
     type: "adult"
     traits: ["disciplined"]
-    starting_meters: { energy: 80.0, hunger: 60.0, hygiene: 50.0, leisure: 50.0 }
+    frequency: 50
+    starting_meters: 
+      energy: { mean: 80.0, variance: 5.0 }
+      hunger: { mean: 60.0, variance: 10.0 }
+      hygiene: { mean: 50.0, variance: 5.0 }
+      leisure: { mean: 50.0, variance: 10.0 }
+    biology:
+      energy:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
+        phase_multipliers:
+          sleep: -10.0 # Deep sleep recovery
+      hunger:
+        decay_per_hour: { mean: 5.0, variance: 0.8 }
+        phase_multipliers:
+          sleep: 0.1   # Barely gets hungry while sleeping
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { mean: 4.0, variance: 1.0 }
     phases:
       - phase_id: "night_sleep"
         type: "sleep"
@@ -13,12 +31,6 @@ personas:
           type: 3
           value: "7h30m"
           flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects: 
-            energy: { amount: 80.0, over: "7h30m", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away" 
         anchor_time: "08:30"
@@ -31,15 +43,31 @@ personas:
         modifiers:
           application: "block_end"
           effects: 
-            energy: { amount: -40.0, over: "9h", curve: "linear" }
-            hunger: { amount: -50.0, over: "9h", curve: "linear" }
             hygiene: { amount: -15.0, over: "9h", curve: "linear" }
             leisure: { amount: -20.0, over: "9h", curve: "linear" }
 
   - id: "office_long_commute"
     type: "adult"
     traits: ["anxious"]
-    starting_meters: { energy: 70.0, hunger: 50.0, hygiene: 50.0, leisure: 40.0 }
+    frequency: 15
+    starting_meters: 
+      energy: { mean: 70.0, variance: 8.0 }
+      hunger: { mean: 50.0, variance: 5.0 }
+      hygiene: { mean: 50.0, variance: 5.0 }
+      leisure: { mean: 40.0, variance: 5.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 4.5, variance: 0.5 } # Commute is tiring
+        phase_multipliers:
+          sleep: -9.0
+      hunger:
+        decay_per_hour: { mean: 5.0, variance: 0.5 }
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.5, variance: 0.2 }
+      leisure:
+        decay_per_hour: { mean: 4.5, variance: 1.0 }
     phases:
       - phase_id: "early_sleep"
         type: "sleep"
@@ -49,12 +77,6 @@ personas:
           type: 3
           value: "7h"
           flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:00"
@@ -67,15 +89,31 @@ personas:
         modifiers:
           application: "block_end"
           effects: 
-            energy: { amount: -65.0, over: "11h", curve: "linear" }
-            hunger: { amount: -70.0, over: "11h", curve: "linear" }
             hygiene: { amount: -25.0, over: "11h", curve: "linear" }
             leisure: { amount: -40.0, over: "11h", curve: "linear" }
 
   - id: "office_night_shift"
     type: "adult"
     traits: ["disciplined"]
-    starting_meters: { energy: 20.0, hunger: 30.0, hygiene: 30.0, leisure: 60.0 }
+    frequency: 10
+    starting_meters: 
+      energy: { mean: 40.0, variance: 10.0 }
+      hunger: { mean: 40.0, variance: 10.0 }
+      hygiene: { mean: 40.0, variance: 10.0 }
+      leisure: { mean: 60.0, variance: 10.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 4.2, variance: 0.4 }
+        phase_multipliers:
+          sleep: -8.0 # Poorer quality day sleep
+      hunger:
+        decay_per_hour: { mean: 5.5, variance: 0.5 }
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
     phases:
       - phase_id: "day_sleep"
         type: "sleep"
@@ -85,12 +123,6 @@ personas:
           type: 3
           value: "8h"
           flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "21:30"
@@ -103,15 +135,31 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -50.0, over: "9h", curve: "linear" }
-            hunger: { amount: -50.0, over: "9h", curve: "linear" }
             hygiene: { amount: -20.0, over: "9h", curve: "linear" }
             leisure: { amount: -20.0, over: "9h", curve: "linear" }
 
   - id: "office_gym_goer"
     type: "adult"
     traits: ["disciplined"]
-    starting_meters: { energy: 90.0, hunger: 70.0, hygiene: 80.0, leisure: 50.0 }
+    frequency: 20
+    starting_meters: 
+      energy: { mean: 90.0, variance: 5.0 }
+      hunger: { mean: 70.0, variance: 5.0 }
+      hygiene: { mean: 80.0, variance: 5.0 }
+      leisure: { mean: 50.0, variance: 10.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 3.5, variance: 0.3 } # Fit, high stamina
+        phase_multipliers:
+          sleep: -11.0 # Excellent recovery
+      hunger:
+        decay_per_hour: { mean: 6.5, variance: 0.8 } # High metabolism
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 3.0, variance: 0.5 }
+      leisure:
+        decay_per_hour: { mean: 3.5, variance: 0.5 }
     phases:
       - phase_id: "strict_sleep"
         type: "sleep"
@@ -121,12 +169,6 @@ personas:
           type: 3
           value: "8h"
           flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 85.0, over: "8h", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift_and_gym"
         type: "away"
         anchor_time: "08:00"
@@ -139,15 +181,31 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -70.0, over: "10h30m", curve: "linear" }
-            hunger: { amount: -80.0, over: "10h30m", curve: "linear" }
-            hygiene: { amount: -80.0, over: "10h30m", curve: "linear" }
+            hygiene: { amount: -80.0, over: "10h30m", curve: "linear" } # Very dirty after gym
             leisure: { amount: 10.0, over: "10h30m", curve: "linear" }
 
   - id: "office_socialite"
     type: "adult"
     traits: ["chaotic"]
-    starting_meters: { energy: 75.0, hunger: 60.0, hygiene: 60.0, leisure: 80.0 }
+    frequency: 15
+    starting_meters: 
+      energy: { mean: 75.0, variance: 10.0 }
+      hunger: { mean: 60.0, variance: 10.0 }
+      hygiene: { mean: 60.0, variance: 10.0 }
+      leisure: { mean: 80.0, variance: 10.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 4.5, variance: 0.8 }
+        phase_multipliers:
+          sleep: -9.0
+      hunger:
+        decay_per_hour: { mean: 4.5, variance: 1.0 }
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { mean: 6.0, variance: 1.5 } # Gets bored quickly
     phases:
       - phase_id: "late_sleep"
         type: "sleep"
@@ -157,12 +215,6 @@ personas:
           type: 3
           value: "6h30m"
           flexibility: "3h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 70.0, over: "6h30m", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_and_drinks"
         type: "away"
         anchor_time: "09:00"
@@ -175,15 +227,32 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -50.0, over: "11h", curve: "linear" }
-            hunger: { amount: -10.0, over: "11h", curve: "linear" }
+            hunger: { amount: 10.0, over: "11h", curve: "linear" } # Eats pub snacks
             hygiene: { amount: -20.0, over: "11h", curve: "linear" }
             leisure: { amount: 50.0, over: "11h", curve: "linear" }
 
   - id: "office_executive"
     type: "adult"
     traits: ["anxious", "disciplined"]
-    starting_meters: { energy: 60.0, hunger: 50.0, hygiene: 70.0, leisure: 30.0 }
+    frequency: 10
+    starting_meters: 
+      energy: { mean: 60.0, variance: 5.0 }
+      hunger: { mean: 50.0, variance: 5.0 }
+      hygiene: { mean: 70.0, variance: 5.0 }
+      leisure: { mean: 30.0, variance: 5.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 5.0, variance: 0.3 } # High stress
+        phase_multipliers:
+          sleep: -8.0
+      hunger:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" } # Skips meals
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { mean: 3.0, variance: 0.2 }
     phases:
       - phase_id: "short_sleep"
         type: "sleep"
@@ -193,12 +262,6 @@ personas:
           type: 3
           value: "6h"
           flexibility: "1h30m"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 65.0, over: "6h", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:30"
@@ -211,15 +274,31 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -80.0, over: "10h", curve: "linear" }
-            hunger: { amount: -60.0, over: "10h", curve: "linear" }
             hygiene: { amount: -20.0, over: "10h", curve: "linear" }
             leisure: { amount: -50.0, over: "10h", curve: "linear" }
 
   - id: "office_part_timer_morning"
     type: "adult"
     traits: ["lazy"]
-    starting_meters: { energy: 85.0, hunger: 70.0, hygiene: 60.0, leisure: 60.0 }
+    frequency: 15
+    starting_meters: 
+      energy: { mean: 85.0, variance: 10.0 }
+      hunger: { mean: 70.0, variance: 10.0 }
+      hygiene: { mean: 60.0, variance: 10.0 }
+      leisure: { mean: 60.0, variance: 10.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 3.8, variance: 0.4 }
+        phase_multipliers:
+          sleep: -10.0
+      hunger:
+        decay_per_hour: { mean: 5.0, variance: 0.6 }
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { mean: 4.5, variance: 0.5 }
     phases:
       - phase_id: "long_sleep"
         type: "sleep"
@@ -229,12 +308,6 @@ personas:
           type: 3
           value: "8h30m"
           flexibility: "2h30m"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 90.0, over: "8h30m", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:00"
@@ -247,15 +320,31 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -20.0, over: "4h", curve: "linear" }
-            hunger: { amount: -30.0, over: "4h", curve: "linear" }
             hygiene: { amount: -10.0, over: "4h", curve: "linear" }
             leisure: { amount: -10.0, over: "4h", curve: "linear" }
 
   - id: "office_part_timer_afternoon"
     type: "adult"
     traits: ["chaotic"]
-    starting_meters: { energy: 80.0, hunger: 60.0, hygiene: 50.0, leisure: 70.0 }
+    frequency: 15
+    starting_meters: 
+      energy: { mean: 80.0, variance: 10.0 }
+      hunger: { mean: 60.0, variance: 10.0 }
+      hygiene: { mean: 50.0, variance: 10.0 }
+      leisure: { mean: 70.0, variance: 10.0 }
+    biology:
+      energy:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
+        phase_multipliers:
+          sleep: -10.0
+      hunger:
+        decay_per_hour: { mean: 5.0, variance: 0.8 }
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
     phases:
       - phase_id: "night_sleep"
         type: "sleep"
@@ -265,12 +354,6 @@ personas:
           type: 3
           value: "8h"
           flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 80.0, over: "8h", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "13:00"
@@ -283,15 +366,31 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -25.0, over: "5h", curve: "linear" }
-            hunger: { amount: -30.0, over: "5h", curve: "linear" }
             hygiene: { amount: -10.0, over: "5h", curve: "linear" }
             leisure: { amount: -15.0, over: "5h", curve: "linear" }
 
   - id: "office_slacker"
     type: "adult"
     traits: ["lazy", "chaotic"]
-    starting_meters: { energy: 90.0, hunger: 60.0, hygiene: 50.0, leisure: 40.0 }
+    frequency: 10
+    starting_meters: 
+      energy: { mean: 90.0, variance: 10.0 }
+      hunger: { mean: 60.0, variance: 10.0 }
+      hygiene: { mean: 50.0, variance: 10.0 }
+      leisure: { mean: 40.0, variance: 10.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 3.5, variance: 0.5 } # Barely expends energy
+        phase_multipliers:
+          sleep: -10.0
+      hunger:
+        decay_per_hour: { mean: 5.0, variance: 1.0 }
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { mean: 6.5, variance: 1.0 } # Needs constant entertainment
     phases:
       - phase_id: "late_sleep"
         type: "sleep"
@@ -301,12 +400,6 @@ personas:
           type: 3
           value: "7h"
           flexibility: "2h30m"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 75.0, over: "7h", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:30"
@@ -319,15 +412,31 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -20.0, over: "7h", curve: "linear" }
-            hunger: { amount: -40.0, over: "7h", curve: "linear" }
             hygiene: { amount: -10.0, over: "7h", curve: "linear" }
-            leisure: { amount: 10.0, over: "7h", curve: "linear" }
+            leisure: { amount: 10.0, over: "7h", curve: "linear" } # Actually gains leisure slacking off at work
 
   - id: "office_early_bird"
     type: "adult"
     traits: ["disciplined"]
-    starting_meters: { energy: 100.0, hunger: 80.0, hygiene: 60.0, leisure: 50.0 }
+    frequency: 20
+    starting_meters: 
+      energy: { mean: 100.0, variance: 2.0 }
+      hunger: { mean: 80.0, variance: 5.0 }
+      hygiene: { mean: 60.0, variance: 5.0 }
+      leisure: { mean: 50.0, variance: 5.0 }
+    biology:
+      energy:
+        decay_per_hour: { mean: 4.5, variance: 0.2 }
+        phase_multipliers:
+          sleep: -12.0 # Efficient sleeper
+      hunger:
+        decay_per_hour: { mean: 5.0, variance: 0.5 }
+        phase_multipliers:
+          sleep: 0.1
+      hygiene:
+        decay_per_hour: { mean: 2.0, variance: 0.2 }
+      leisure:
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
     phases:
       - phase_id: "early_sleep"
         type: "sleep"
@@ -337,12 +446,6 @@ personas:
           type: 3
           value: "7h"
           flexibility: "1h30m"
-        modifiers:
-          application: "continuous"
-          effects:
-            energy: { amount: 80.0, over: "7h", curve: "front_loaded" }
-            hygiene: { amount: -30.0, over: "9h", curve: "linear" }
-            leisure: { amount: +20.0, over: "9h", curve: "linear" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "06:00"
@@ -355,7 +458,5 @@ personas:
         modifiers:
           application: "block_end"
           effects:
-            energy: { amount: -40.0, over: "8h30m", curve: "linear" }
-            hunger: { amount: -50.0, over: "8h30m", curve: "linear" }
             hygiene: { amount: -15.0, over: "8h30m", curve: "linear" }
             leisure: { amount: -20.0, over: "8h30m", curve: "linear" }

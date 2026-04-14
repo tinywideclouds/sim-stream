@@ -44,7 +44,7 @@ func main() {
 	}
 	defer logFile.Close()
 
-	logger := slog.New(slog.NewTextHandler(io.MultiWriter(os.Stdout, logFile), &slog.HandlerOptions{Level: slog.LevelInfo}))
+	logger := slog.New(slog.NewTextHandler(io.MultiWriter(os.Stdout, logFile), &slog.HandlerOptions{Level: slog.LevelWarn}))
 	slog.SetDefault(logger)
 
 	// 3. Initialize the Global CSV Reporter
@@ -127,16 +127,18 @@ func main() {
 		// We pass 'nil' for all four reporters so this period generates no UI output.
 		slog.Info("Starting burn-in phase...", "household", blueprint.ArchetypeID, "duration", burnInDuration)
 		burnInRunner := simulate.NewRunner(orchestrator, nil, nil, nil)
-		if err := burnInRunner.Run(state, burnInDuration, samplingInterval, weatherProvider, gridProvider); err != nil {
+
+		if err := burnInRunner.Run(state, burnInDuration, samplingInterval, samplingInterval, weatherProvider, gridProvider); err != nil {
 			slog.Error("Burn-in failed", "household", blueprint.ArchetypeID, "error", err)
 			continue
 		}
 
 		// --- PHASE 2: PRIMARY SIMULATION ---
+		telemetryInterval := 5 * time.Minute
 		slog.Info("Starting main simulation...", "household", blueprint.ArchetypeID, "duration", simulationDuration)
 		// We pass the global CSV reporter to all three data stream arguments
 		mainRunner := simulate.NewRunner(orchestrator, reporter, reporter, reporter)
-		if err := mainRunner.Run(state, simulationDuration, samplingInterval, weatherProvider, gridProvider); err != nil {
+		if err := mainRunner.Run(state, simulationDuration, samplingInterval, telemetryInterval, weatherProvider, gridProvider); err != nil {
 			slog.Error("Simulation failed", "household", blueprint.ArchetypeID, "error", err)
 			continue
 		}

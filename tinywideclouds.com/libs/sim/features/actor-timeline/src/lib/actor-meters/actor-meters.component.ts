@@ -36,7 +36,12 @@ export class ActorMetersComponent {
     const series: any[] = [];
     const legendData: string[] = [];
 
-    const meterColors = { Energy: '#eab308', Hunger: '#ef4444', Hygiene: '#06b6d4', Leisure: '#8b5cf6' };
+    const meterColors: Record<string, string> = { 
+      Energy: '#eab308', 
+      Hunger: '#ef4444', 
+      Hygiene: '#06b6d4', 
+      Leisure: '#8b5cf6' 
+    };
     const lineTypes = ['solid', 'dashed', 'dotted'];
 
     for (let i = 0; i < actors.length; i++) {
@@ -55,10 +60,11 @@ export class ActorMetersComponent {
           type: 'line',
           smooth: true,
           symbol: 'circle',
-          symbolSize: 4,
-          showSymbol: false, // Only show dots on hover to avoid clutter
+          symbolSize: 3, 
+          showSymbol: true, 
           lineStyle: { width: 2, type: lineType as any },
           itemStyle: { color: meterColors[meterName] },
+          emphasis: { focus: 'series' }, 
           data: actorRows.map(r => [r.timestamp.epochMilliseconds, r[key]])
         });
       };
@@ -71,22 +77,27 @@ export class ActorMetersComponent {
 
     return {
       tooltip: {
-        trigger: 'item', // Fixes the "snapping" issue across long empty slopes
-        axisPointer: { 
-          type: 'cross', // Provides an exact Y-axis tracking line for interpolated values
-          label: { backgroundColor: '#475569' }
-        },
+        trigger: 'item', // ONLY shows the specific point you hover over
+        // axisPointer is completely removed to kill the annoying x,y lines
         formatter: (params: any) => {
+          // With trigger: 'item', params is a single object, not an array
           const date = new Date(params.data[0]).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          return `<b>${date}</b><br/>${params.marker} ${params.seriesName}: ${Number(params.data[1]).toFixed(1)}%`;
+          const val = Number(params.data[1]).toFixed(1);
+          
+          return `
+            <div style="font-weight:bold; margin-bottom:6px; border-bottom:1px solid #ccc; padding-bottom:4px;">${date}</div>
+            <div style="display:flex; justify-content:space-between; gap:16px; margin-bottom:2px; font-size:13px;">
+              <span>${params.marker} ${params.seriesName}</span>
+              <span style="font-weight:bold; color:#1e293b;">${val}%</span>
+            </div>
+          `;
         }
       },
       legend: { data: legendData, top: 0, type: 'scroll' },
-      // LOCKED GRID: Matches the other charts exactly
       grid: { left: '60px', right: '60px', top: '15%', bottom: '15%' },
       xAxis: {
         type: 'time',
-        min: timeRange.start.epochMilliseconds, // Locks bounds to prevent drift
+        min: timeRange.start.epochMilliseconds,
         max: timeRange.end.epochMilliseconds,
         axisLabel: { formatter: '{MM}-{dd} {HH}:{mm}' }
       },

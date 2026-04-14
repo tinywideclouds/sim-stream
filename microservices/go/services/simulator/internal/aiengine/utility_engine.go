@@ -1,7 +1,6 @@
 package aiengine
 
 import (
-	"fmt"
 	"math"
 	"time"
 
@@ -106,16 +105,27 @@ func (ue *UtilityEngine) CanSafelyWait(actorID string, projectedWait time.Durati
 		return false
 	}
 
+	var actorObj domain.Actor
+	for _, a := range state.Blueprint.Actors {
+		if a.ActorID == actorID {
+			actorObj = a
+			break
+		}
+	}
+
 	waitHours := projectedWait.Hours()
 	const safetyThreshold = 5.0
 
-	for _, m := range state.Blueprint.Meters {
-		if m.BaseDecayPerHour > 0 {
-			currentVal := actorMeters[m.MeterID]
-			decayAmount := m.BaseDecayPerHour * waitHours
+	for meterID, bio := range actorObj.Biology {
+		if bio.DecayPerHour > 0 {
+			currentVal := actorMeters[meterID]
+			decayAmount := bio.DecayPerHour * waitHours
 
-			if m.Curve == "exponential" {
-				decayAmount *= 1.5
+			for _, m := range state.Blueprint.Meters {
+				if m.MeterID == meterID && m.Curve == "exponential" {
+					decayAmount *= 1.5
+					break
+				}
 			}
 
 			if (currentVal - decayAmount) < safetyThreshold {
@@ -136,6 +146,12 @@ func (ue *UtilityEngine) InterruptCurrentTask(actorID string, state *engine.Simu
 		if act.ActionID == activeActID {
 			if !act.Interruptible {
 				return false
+			}
+			// FIX: Ensure the physical device is turned off!
+			if act.DeviceID != "" {
+				if devLedger, ok := state.Devices[act.DeviceID]; ok {
+					devLedger.State = domain.DeviceStateOff
+				}
 			}
 			break
 		}
@@ -311,29 +327,59 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 			continue
 		}
 
-		// 1. BASE DECAY APPLICATION
-		for _, m := range state.Blueprint.Meters {
-			decayAmount := m.BaseDecayPerHour * (tickDuration.Seconds() / 3600.0)
-
-			if actorLedger.CurrentState == domain.ActorStateAsleep {
-				decayAmount *= 0.15
-			}
-
-			if m.Curve == "exponential" {
-				currentVal := ue.meters[actor.ActorID][m.MeterID]
-				factor := (maxMeters[m.MeterID] - currentVal) / maxMeters[m.MeterID]
-				if factor < 0.1 {
-					factor = 0.1
+		var currentPhaseType string
+		if activeAct, busy := ue.activeAction[actor.ActorID]; busy {
+			for _, p := range actor.Phases {
+				if p.PhaseID == activeAct {
+					currentPhaseType = p.Type
+					break
 				}
-				decayAmount *= (1.0 + factor)
-			}
-			ue.meters[actor.ActorID][m.MeterID] -= decayAmount
-			if ue.meters[actor.ActorID][m.MeterID] < 0 {
-				ue.meters[actor.ActorID][m.MeterID] = 0
 			}
 		}
 
-		// 2. ACTIVE TASK EVALUATION
+		if currentPhaseType == "" {
+			if actorLedger.CurrentState == domain.ActorStateAsleep {
+				currentPhaseType = "sleep"
+			} else if actorLedger.CurrentState == domain.ActorStateAway {
+				currentPhaseType = "away"
+			} else if actorLedger.CurrentState == domain.ActorStateHomeFree {
+				currentPhaseType = "home"
+			}
+		}
+
+		for meterID, bio := range actor.Biology {
+			decayRate := bio.DecayPerHour
+
+			if mult, ok := bio.PhaseMultipliers[currentPhaseType]; ok {
+				decayRate *= mult
+			}
+
+			decayAmount := decayRate * (tickDuration.Seconds() / 3600.0)
+
+			if decayAmount > 0 {
+				for _, mTemplate := range state.Blueprint.Meters {
+					if mTemplate.MeterID == meterID && mTemplate.Curve == "exponential" {
+						currentVal := ue.meters[actor.ActorID][meterID]
+						factor := (maxMeters[meterID] - currentVal) / maxMeters[meterID]
+						if factor < 0.1 {
+							factor = 0.1
+						}
+						decayAmount *= (1.0 + factor)
+						break
+					}
+				}
+			}
+
+			ue.meters[actor.ActorID][meterID] -= decayAmount
+
+			if ue.meters[actor.ActorID][meterID] < 0 {
+				ue.meters[actor.ActorID][meterID] = 0
+			}
+			if limit, ok := maxMeters[meterID]; ok && ue.meters[actor.ActorID][meterID] > limit {
+				ue.meters[actor.ActorID][meterID] = limit
+			}
+		}
+
 		if state.SimTime.Before(actorLedger.StateEndsAt) {
 			activeHumanActors = append(activeHumanActors, engine.ActorTickState{
 				ActorID:  actor.ActorID,
@@ -360,23 +406,24 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 						}
 					}
 				}
-
-				var mLog string
-				for m, v := range ue.meters[actor.ActorID] {
-					mLog += fmt.Sprintf("%s:%.1f, ", m, v)
-				}
-				debugLogs = append(debugLogs, fmt.Sprintf("[%s] (Busy: %s) Live Meters: %s", actor.ActorID, task.ActionID, mLog))
 			}
 			continue
 		}
 
-		// 3. CLEANUP & IDLE PREP
-		if _, wasBusy := ue.activeAction[actor.ActorID]; wasBusy {
+		if activeAct, wasBusy := ue.activeAction[actor.ActorID]; wasBusy {
+			// FIX: Ensure the device is turned off organically
+			for _, act := range state.Blueprint.Actions {
+				if act.ActionID == activeAct && act.DeviceID != "" {
+					if devLedger, exists := state.Devices[act.DeviceID]; exists {
+						devLedger.State = domain.DeviceStateOff
+					}
+					break
+				}
+			}
 			delete(ue.activeAction, actor.ActorID)
 			delete(ue.activeTasks, actor.ActorID)
 		}
 
-		// 4. ACTION SCORING
 		bestScore := 0.0
 		var validActions []domain.ActionTemplate
 		actionScores := make(map[string]float64)
@@ -502,7 +549,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 			}
 		}
 
-		// 5. ROULETTE WHEEL
 		var wheel []string
 		var weights []float64
 		var totalWeight float64
@@ -522,7 +568,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 			}
 		}
 
-		// 6. EXECUTE CHOSEN ACTION
 		if len(wheel) > 0 {
 			rollDist := domain.ProbabilityDistribution{Type: domain.DistributionTypeUniform, Min: 0.0, Max: 1.0}
 			fVal, err := ue.sampler.Float64(rollDist)
@@ -563,12 +608,6 @@ func (ue *UtilityEngine) Process(state *engine.SimulationState, snapshot parsers
 						devLedger.StateEndsAt = state.SimTime.Add(duration)
 					}
 				}
-
-				var mLog string
-				for m, v := range ue.meters[actor.ActorID] {
-					mLog += fmt.Sprintf("%s:%.1f, ", m, v)
-				}
-				debugLogs = append(debugLogs, fmt.Sprintf("[%s] Meters(%s) | Roulette Chose: %s | Max Was: %.1f", actor.ActorID, mLog, actionID, bestScore))
 
 				for meterID, amount := range template.Costs {
 					ue.meters[actor.ActorID][meterID] -= amount

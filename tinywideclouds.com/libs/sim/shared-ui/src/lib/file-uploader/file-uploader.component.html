@@ -7,57 +7,114 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
     
     <div 
-      class="relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors hover:border-blue-500 border-slate-300"
+      class="relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors border-slate-300 min-h-[160px]"
+      [class.hover:border-blue-500]="!loadingState().actor && !loadedFiles().actor"
+      [class.border-blue-500]="loadedFiles().actor"
+      [class.bg-blue-50]="loadedFiles().actor"
+      [class.opacity-60]="loadingState().actor"
+      [class.pointer-events-none]="loadingState().actor"
       (dragover)="onDragOver($event)" 
       (drop)="onDrop($event, 'actor')">
       
-      <div class="text-center text-slate-500">
-        <svg class="w-10 h-10 mx-auto mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-        <p class="font-medium mb-1">Actor Timeline CSV</p>
-        <p class="text-xs mb-4">Drag and drop here</p>
-        <button (click)="actorInput.click()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-md transition-colors">
-          + Browse File
-        </button>
-        <input 
-        aria-label="actor"  #actorInput type="file" accept=".csv" class="hidden" (change)="onFileSelected($event, 'actor')">
-      </div>
+      @if (loadingState().actor) {
+        <div class="text-center text-slate-500">
+          <svg class="animate-spin w-10 h-10 mx-auto mb-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="font-medium text-blue-600">Parsing Data...</p>
+        </div>
+      } @else if (loadedFiles().actor) {
+        <div class="text-center text-blue-700">
+          <svg class="w-10 h-10 mx-auto mb-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <p class="font-bold truncate max-w-[200px]" [title]="loadedFiles().actor">{{ loadedFiles().actor }}</p>
+          <p class="text-xs text-blue-500 mt-1">Ready for Analysis</p>
+        </div>
+      } @else {
+        <div class="text-center text-slate-500">
+          <svg class="w-10 h-10 mx-auto mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          <p class="font-medium mb-1">Actor Timeline CSV</p>
+          <p class="text-xs mb-4">Drag and drop here</p>
+          <button (click)="actorInput.click()" class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-md shadow-sm transition-colors">
+            Browse File
+          </button>
+          <input aria-label="actor" #actorInput type="file" accept=".csv" class="hidden" (change)="onFileSelected($event, 'actor')">
+        </div>
+      }
     </div>
 
     <div 
-      class="relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors hover:border-emerald-500 border-slate-300"
+      class="relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors border-slate-300 min-h-[160px]"
+      [class.hover:border-emerald-500]="!loadingState().meter && !loadedFiles().meter"
+      [class.border-emerald-500]="loadedFiles().meter"
+      [class.bg-emerald-50]="loadedFiles().meter"
+      [class.opacity-60]="loadingState().meter"
+      [class.pointer-events-none]="loadingState().meter"
       (dragover)="onDragOver($event)" 
       (drop)="onDrop($event, 'meter')">
       
-      <div class="text-center text-slate-500">
-        <svg class="w-10 h-10 mx-auto mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-        <p class="font-medium mb-1">Actor Meters CSV</p>
-        <p class="text-xs mb-4">Drag and drop here</p>
-        <button (click)="meterInput.click()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-md transition-colors">
-          + Browse File
-        </button>
-        <input 
-        aria-label="meter" 
-        #meterInput type="file" accept=".csv" class="hidden" (change)="onFileSelected($event, 'meter')">
-      </div>
+      @if (loadingState().meter) {
+        <div class="text-center text-slate-500">
+          <svg class="animate-spin w-10 h-10 mx-auto mb-3 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="font-medium text-emerald-600">Parsing Data...</p>
+        </div>
+      } @else if (loadedFiles().meter) {
+        <div class="text-center text-emerald-700">
+          <svg class="w-10 h-10 mx-auto mb-2 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <p class="font-bold truncate max-w-[200px]" [title]="loadedFiles().meter">{{ loadedFiles().meter }}</p>
+          <p class="text-xs text-emerald-500 mt-1">Ready for Analysis</p>
+        </div>
+      } @else {
+        <div class="text-center text-slate-500">
+          <svg class="w-10 h-10 mx-auto mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          <p class="font-medium mb-1">Actor Meters CSV</p>
+          <p class="text-xs mb-4">Drag and drop here</p>
+          <button (click)="meterInput.click()" class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-md shadow-sm transition-colors">
+            Browse File
+          </button>
+          <input aria-label="meter" #meterInput type="file" accept=".csv" class="hidden" (change)="onFileSelected($event, 'meter')">
+        </div>
+      }
     </div>
 
     <div 
-      class="relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors hover:border-amber-500 border-slate-300"
+      class="relative flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-xl transition-colors border-slate-300 min-h-[160px]"
+      [class.hover:border-amber-500]="!loadingState().power && !loadedFiles().power"
+      [class.border-amber-500]="loadedFiles().power"
+      [class.bg-amber-50]="loadedFiles().power"
+      [class.opacity-60]="loadingState().power"
+      [class.pointer-events-none]="loadingState().power"
       (dragover)="onDragOver($event)" 
       (drop)="onDrop($event, 'power')">
       
-      <div class="text-center text-slate-500">
-        <svg class="w-10 h-10 mx-auto mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-        <p class="font-medium mb-1">Power Usage CSV</p>
-        <p class="text-xs mb-4">Drag and drop here</p>
-        <button (click)="powerInput.click()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-md transition-colors">
-          + Browse File
-        </button>
-        <input
-        aria-label="power" 
-        
-        #powerInput type="file" accept=".csv" class="hidden" (change)="onFileSelected($event, 'power')">
-      </div>
+      @if (loadingState().power) {
+        <div class="text-center text-slate-500">
+          <svg class="animate-spin w-10 h-10 mx-auto mb-3 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p class="font-medium text-amber-600">Parsing Data...</p>
+        </div>
+      } @else if (loadedFiles().power) {
+        <div class="text-center text-amber-700">
+          <svg class="w-10 h-10 mx-auto mb-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <p class="font-bold truncate max-w-[200px]" [title]="loadedFiles().power">{{ loadedFiles().power }}</p>
+          <p class="text-xs text-amber-500 mt-1">Ready for Analysis</p>
+        </div>
+      } @else {
+        <div class="text-center text-slate-500">
+          <svg class="w-10 h-10 mx-auto mb-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <p class="font-medium mb-1">Power Usage CSV</p>
+          <p class="text-xs mb-4">Drag and drop here</p>
+          <button (click)="powerInput.click()" class="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-sm font-medium rounded-md shadow-sm transition-colors">
+            Browse File
+          </button>
+          <input aria-label="power" #powerInput type="file" accept=".csv" class="hidden" (change)="onFileSelected($event, 'power')">
+        </div>
+      }
     </div>
 
   </div>

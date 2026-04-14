@@ -40,47 +40,62 @@ func NewRunner(orch TickProvider, actorRep ActorReporter, powerRep PowerReporter
 	}
 }
 
+// Run executes the simulation loop.
+// samplingInterval dictates physics updates (e.g. 15s).
+// telemetryInterval dictates how often meters/power dump to CSV to save file size.
 func (r *Runner) Run(
 	state *engine.SimulationState,
 	simulationLength time.Duration,
 	samplingInterval time.Duration,
+	telemetryInterval time.Duration,
 	weather engine.WeatherProvider,
 	grid engine.GridProvider,
 ) error {
 	householdID := state.Blueprint.ArchetypeID
 	previousActions := make(map[string]engine.ActorTickState)
 
+	// Force log on the very first tick
+	timeSinceLastTelemetry := telemetryInterval
+
 	for elapsed := time.Duration(0); elapsed < simulationLength; elapsed += samplingInterval {
 		res := r.Orchestrator.Tick(state, samplingInterval, weather, grid)
 		simTimeStr := res.Timestamp.Format("Mon 15:04")
 
-		if r.PowerReporter != nil {
-			err := r.PowerReporter.AddPowerUsage(
-				householdID,
-				res.Timestamp,
-				res.TotalWatts,
-				res.IndoorTempC,
-				res.TankTempC,
-				res.ActiveDevices,
-			)
-			if err != nil {
-				return err
-			}
+		shouldLogTelemetry := false
+		if timeSinceLastTelemetry >= telemetryInterval {
+			shouldLogTelemetry = true
+			timeSinceLastTelemetry = 0
 		}
 
-		if r.MeterReporter != nil {
-			for _, act := range res.ActiveActors {
-				err := r.MeterReporter.AddActorMeters(
+		if shouldLogTelemetry {
+			if r.PowerReporter != nil {
+				err := r.PowerReporter.AddPowerUsage(
 					householdID,
-					act.ActorID,
 					res.Timestamp,
-					act.Meters["energy"],
-					act.Meters["hunger"],
-					act.Meters["hygiene"],
-					act.Meters["leisure"],
+					res.TotalWatts,
+					res.IndoorTempC,
+					res.TankTempC,
+					res.ActiveDevices,
 				)
 				if err != nil {
 					return err
+				}
+			}
+
+			if r.MeterReporter != nil {
+				for actorID, meters := range res.AllHumanMeters {
+					err := r.MeterReporter.AddActorMeters(
+						householdID,
+						actorID,
+						res.Timestamp,
+						meters["energy"],
+						meters["hunger"],
+						meters["hygiene"],
+						meters["leisure"],
+					)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -90,6 +105,7 @@ func (r *Runner) Run(
 			currentActions[act.ActorID] = act
 		}
 
+		// Always evaluate actor action changes immediately for the Gantt Chart
 		for actorID, currentState := range currentActions {
 			oldState, exists := previousActions[actorID]
 			if !exists || oldState.ActionID != currentState.ActionID {
@@ -127,6 +143,7 @@ func (r *Runner) Run(
 		}
 
 		previousActions = currentActions
+		timeSinceLastTelemetry += samplingInterval
 	}
 
 	return nil

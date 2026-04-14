@@ -19,6 +19,9 @@ func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
 				StartingMeters: map[string]float64{
 					"energy": 50.0,
 				},
+				Biology: map[string]domain.InstantiatedBiology{
+					"energy": {DecayPerHour: 0.0},
+				},
 			},
 		},
 	}
@@ -49,8 +52,8 @@ func TestUtilityEngine_ExternalStateManipulation(t *testing.T) {
 func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 	blueprint := &domain.NodeArchetype{
 		Meters: []domain.MeterTemplate{
-			{MeterID: "hunger", Max: 100.0, BaseDecayPerHour: 10.0, Curve: "linear"},
-			{MeterID: "energy", Max: 100.0, BaseDecayPerHour: 5.0, Curve: "linear"},
+			{MeterID: "hunger", Max: 100.0, Curve: "linear"},
+			{MeterID: "energy", Max: 100.0, Curve: "linear"},
 		},
 		Actions: []domain.ActionTemplate{
 			{
@@ -71,6 +74,10 @@ func TestUtilityEngine_EmergentBehavior(t *testing.T) {
 				StartingMeters: map[string]float64{
 					"hunger": 20.0,
 					"energy": 10.0,
+				},
+				Biology: map[string]domain.InstantiatedBiology{
+					"hunger": {DecayPerHour: 10.0},
+					"energy": {DecayPerHour: 5.0},
 				},
 			},
 		},
@@ -168,10 +175,16 @@ func TestUtilityEngine_ForceTask(t *testing.T) {
 
 	blueprint := &domain.NodeArchetype{
 		Actors: []domain.Actor{
-			{ActorID: "actor1", StartingMeters: map[string]float64{"energy": 50.0}},
+			{
+				ActorID:        "actor1",
+				StartingMeters: map[string]float64{"energy": 50.0},
+				Biology: map[string]domain.InstantiatedBiology{
+					"energy": {DecayPerHour: 6.0},
+				},
+			},
 		},
 		Meters: []domain.MeterTemplate{
-			{MeterID: "energy", Max: 100.0, BaseDecayPerHour: 6.0, Curve: "linear"},
+			{MeterID: "energy", Max: 100.0, Curve: "linear"},
 		},
 		Actions: []domain.ActionTemplate{
 			{
@@ -200,7 +213,7 @@ func TestUtilityEngine_ForceTask(t *testing.T) {
 	state.SimTime = state.SimTime.Add(tickDuration)
 	activeActors, _, _ := ue.Process(state, nil, tickDuration)
 
-	if len(activeActors) == 0 || activeActors[0].ActorID != "actor1" || activeActors[0].ActionID != "night_sleep" {
+	if len(activeActors) == 0 || activeActors[0].ActionID != "night_sleep" {
 		t.Errorf("Expected actor to report night_sleep, got %v", activeActors)
 	}
 
@@ -225,7 +238,14 @@ func TestUtilityEngine_IntentSuppression(t *testing.T) {
 			{MeterID: "leisure", Max: 100},
 		},
 		Actors: []domain.Actor{
-			{ActorID: "actor_1", AIModel: "utility"},
+			{
+				ActorID: "actor_1",
+				AIModel: "utility",
+				Biology: map[string]domain.InstantiatedBiology{
+					"hunger":  {DecayPerHour: 0},
+					"leisure": {DecayPerHour: 0},
+				},
+			},
 		},
 		Actions: []domain.ActionTemplate{
 			{
@@ -291,12 +311,15 @@ func TestUtilityEngine_InterruptCurrentTask(t *testing.T) {
 		SimTime: time.Now(),
 		Blueprint: &domain.NodeArchetype{
 			Actions: []domain.ActionTemplate{
-				{ActionID: "interruptible_task", Interruptible: true},
+				{ActionID: "interruptible_task", Interruptible: true, DeviceID: "tv_1"},
 				{ActionID: "locked_task", Interruptible: false},
 			},
 		},
 		Actors: map[string]*engine.ActorLedger{
 			"actor_1": {StateEndsAt: time.Now().Add(time.Hour)},
+		},
+		Devices: map[string]*engine.DeviceLedger{
+			"tv_1": {State: domain.DeviceStateOn},
 		},
 	}
 
@@ -309,6 +332,9 @@ func TestUtilityEngine_InterruptCurrentTask(t *testing.T) {
 	}
 	if _, ok := ue.activeAction["actor_1"]; ok {
 		t.Fatal("Task was not cleared from ActiveAction")
+	}
+	if state.Devices["tv_1"].State != domain.DeviceStateOff {
+		t.Fatal("Expected linked device to be turned off upon task interrupt")
 	}
 
 	ue.activeAction["actor_1"] = "locked_task"

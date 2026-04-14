@@ -20,15 +20,12 @@ func main() {
 	totalRuns := flag.Int("count", 100, "Number of households to generate")
 	flag.Parse()
 
-	opts := &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}
+	opts := &slog.HandlerOptions{Level: slog.LevelDebug}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
 
 	slog.Info("--- Starting Bulk Household Profiler ---")
 
-	// 1. Load the Registry
 	reg, err := factory.LoadRegistry(*catalogsDir)
 	if err != nil {
 		slog.Error("Critical: Failed to load catalog registry", slog.Any("error", err))
@@ -40,44 +37,50 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("Registry loaded",
-		slog.Int("devices", len(reg.Devices)),
-		slog.Int("actions", len(reg.Actions)),
-		slog.Int("personas", len(reg.Personas)),
-		slog.Int("recipes", len(reg.Compositions)))
-
-	// 2. Prepare Output Environment
 	if err := os.MkdirAll(*outDir, 0755); err != nil {
 		slog.Error("Failed to create output directory", slog.Any("error", err))
 		os.Exit(1)
 	}
 
-	// 3. Initialize the Monte Carlo Pipeline
 	var seed [32]byte
 	copy(seed[:], []byte(time.Now().String()))
 	sampler := generator.NewSampler(seed)
 	builder := factory.NewHouseholdGenerator(reg, sampler)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	// Convert Compositions map to a slice for random selection
 	var recipes []factory.CatalogComposition
+	totalRecipeWeight := 0
 	for _, comp := range reg.Compositions {
 		recipes = append(recipes, comp)
+		w := comp.Frequency
+		if w <= 0 {
+			w = 10
+		}
+		totalRecipeWeight += w
 	}
 
-	// Index Personas by their Type (adult, child, elderly)
-	personasByType := make(map[string][]string)
-	for id, p := range reg.Personas {
-		personasByType[p.Type] = append(personasByType[p.Type], id)
-	}
-
-	// 4. The Generation Loop
 	successCount := 0
 	for i := 1; i <= *totalRuns; i++ {
-		recipe := recipes[rng.Intn(len(recipes))]
+		// 1. Weighted Recipe Selection
+		roll := rng.Intn(totalRecipeWeight)
+		var recipe factory.CatalogComposition
+		accum := 0
+		for _, comp := range recipes {
+			w := comp.Frequency
+			if w <= 0 {
+				w = 10
+			}
+			accum += w
+			if roll < accum {
+				recipe = comp
+				break
+			}
+		}
 
+		// 2. Just pass the requirements straight to the Builder!
 		req := factory.GenerationRequest{
 			ArchetypeID:            fmt.Sprintf("%s_%03d", recipe.ID, i),
+			PersonaRequirements:    recipe.PersonaRequirements,
 			RequiredDeviceTags:     recipe.RequiredDeviceTags,
 			RequiredWaterSystemTag: recipe.RequiredWaterSystemTag,
 			SystemIDs:              recipe.SystemIDs,
@@ -86,37 +89,12 @@ func main() {
 			EventIDs:               recipe.EventIDs,
 		}
 
-		// RESOLVE DYNAMIC PERSONA REQUIREMENTS
-		for _, preq := range recipe.PersonaRequirements {
-			available := personasByType[preq.Type]
-			if len(available) == 0 {
-				if preq.Min > 0 {
-					slog.Warn("Recipe requires persona type but none exist", slog.String("recipe", recipe.ID), slog.String("type", preq.Type))
-				}
-				continue
-			}
-
-			// Roll how many of this type we need
-			personaCount := preq.Min
-			if preq.Max > preq.Min {
-				personaCount += rng.Intn(preq.Max - preq.Min + 1)
-			}
-
-			// Randomly select them from the available bucket
-			for c := 0; c < personaCount; c++ {
-				pID := available[rng.Intn(len(available))]
-				req.PersonaIDs = append(req.PersonaIDs, pID)
-			}
-		}
-
-		// Execute the Assembly
 		node, err := builder.Generate(req)
 		if err != nil {
 			slog.Warn("Skipping house", slog.Int("index", i), slog.String("recipe", recipe.ID), slog.Any("error", err))
 			continue
 		}
 
-		// Serialize & Write
 		outData, err := yaml.Marshal(node)
 		if err != nil {
 			slog.Error("Failed to marshal YAML", slog.String("archetype", req.ArchetypeID), slog.Any("error", err))

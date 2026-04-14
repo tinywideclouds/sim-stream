@@ -12,6 +12,13 @@ const (
 	PhaseTypeSleep PhaseType = "sleep"
 )
 
+type PhaseBlock struct {
+	BlockID     string         `yaml:"block_id"`
+	Probability float64        `yaml:"probability"` // e.g., 0.6 for pub, 1.0 for commute
+	Duration    PhaseDuration  `yaml:"duration"`
+	Modifiers   PhaseModifiers `yaml:"modifiers"`
+}
+
 // Phase replaces your old DailyPhase.
 type Phase struct {
 	PhaseID    string         `yaml:"phase_id"`

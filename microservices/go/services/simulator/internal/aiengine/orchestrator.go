@@ -24,6 +24,7 @@ type TickResult struct {
 	TankTempC       float64
 	ActiveDevices   []string
 	ActiveActors    []engine.ActorTickState
+	AllHumanMeters  map[string]map[string]float64
 	Anomalies       []string
 	DebugLog        []string
 }
@@ -63,10 +64,28 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 
 	o.handleSharingIntents(state, activeHumanActors)
 
-	activeAmbientActors := engine.ProcessAmbientSystems(state, snapshot, o.sampler)
+	_ = engine.ProcessAmbientSystems(state, snapshot, o.sampler)
 
-	// --- Enrich the structured ActorTickState objects ---
 	var finalActors []engine.ActorTickState
+	allMeters := make(map[string]map[string]float64)
+
+	for _, a := range state.Blueprint.Actors {
+		if a.Type == "system" {
+			continue
+		}
+		actorMeters := make(map[string]float64)
+		snap := o.humanAI.GetActorSnapshot(a.ActorID)
+		if snap != nil {
+			for k, v := range snap {
+				if strings.HasPrefix(k, "actor.") {
+					if val, ok := v.(float64); ok {
+						actorMeters[strings.TrimPrefix(k, "actor.")] = val
+					}
+				}
+			}
+		}
+		allMeters[a.ActorID] = actorMeters
+	}
 
 	for _, act := range activeHumanActors {
 		isShared := false
@@ -83,35 +102,9 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 			}
 		}
 		act.IsShared = isShared
-
-		meters := make(map[string]float64)
-		snap := o.humanAI.GetActorSnapshot(act.ActorID)
-		if snap != nil {
-			for k, v := range snap {
-				if strings.HasPrefix(k, "actor.") {
-					if val, ok := v.(float64); ok {
-						meters[strings.TrimPrefix(k, "actor.")] = val
-					}
-				}
-			}
-		}
-		act.Meters = meters
-
+		act.Meters = allMeters[act.ActorID]
 		finalActors = append(finalActors, act)
 	}
-
-	for _, actStr := range activeAmbientActors {
-		parts := strings.Split(actStr, ":")
-		if len(parts) == 2 {
-			finalActors = append(finalActors, engine.ActorTickState{
-				ActorID:  parts[0],
-				ActionID: parts[1],
-				IsShared: false,
-				Meters:   make(map[string]float64),
-			})
-		}
-	}
-	// ------------------------------------------------------------------------
 
 	participantCounts := make(map[string]int)
 	if state.House.PendingEvents != nil {
@@ -139,6 +132,7 @@ func (o *Orchestrator) Tick(state *engine.SimulationState, tickDuration time.Dur
 		TankTempC:       state.HotWaterTankC,
 		ActiveDevices:   physics.ActiveDevices,
 		ActiveActors:    finalActors,
+		AllHumanMeters:  allMeters,
 		Anomalies:       anomalies,
 		DebugLog:        debugLogs,
 	}
