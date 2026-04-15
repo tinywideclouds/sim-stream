@@ -1,4 +1,3 @@
-# catalogs/personas/students.yaml
 personas:
   - id: "student_early_lectures"
     type: "adult"
@@ -25,29 +24,26 @@ personas:
         type: "sleep"
         anchor_time: "23:30"
         gravity: 0.2
-        duration:
-          type: "constant"
-          value: "7h"
-          flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -15.0, over: "7h", curve: "linear" }
-            leisure: { amount: 5.0, over: "7h", curve: "linear" }
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "1h" }
+            modifiers:
+              hygiene: { amount: -15.0, over: "7h", curve: "linear" }
+              leisure: { amount: 5.0, over: "7h", curve: "linear" }
       - phase_id: "university"
         type: "away"
         anchor_time: "08:30"
         gravity: 0.9
-        duration: 
-          type: "normal" 
-          mean: "6h"
-          std_dev: "45m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects: 
-            hygiene: { amount: -20.0, over: "6h", curve: "linear" }
-            leisure: { amount: -30.0, over: "6h", curve: "linear" }
+        blocks:
+          - block_id: "lectures"
+            probability: 1.0
+            duration: { type: "normal", mean: "6h", std_dev: "45m" }
+            modifiers:
+              hygiene: { amount: -20.0, over: "6h", curve: "linear" }
+              leisure: { amount: -30.0, over: "6h", curve: "linear" }
+              energy: { amount: -30.0, over: "6h", curve: "linear" }
+              hunger: { amount: -35.0, over: "6h", curve: "linear" }
 
   - id: "student_night_owl"
     type: "adult"
@@ -74,26 +70,23 @@ personas:
         type: "sleep"
         anchor_time: "03:00"
         gravity: 0.2
-        duration:
-          type: "constant"
-          value: "8h"
-          flexibility: "3h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -15.0, over: "8h", curve: "linear" }
-            leisure: { amount: 5.0, over: "8h", curve: "linear" }
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "8h", std_dev: "1h30m" }
+            modifiers:
+              hygiene: { amount: -15.0, over: "8h", curve: "linear" }
+              leisure: { amount: 5.0, over: "8h", curve: "linear" }
       - phase_id: "late_lectures"
         type: "away"
         anchor_time: "13:00"
         gravity: 0.8
-        duration: 
-          type: "normal" 
-          mean: "5h"
-          std_dev: "60m"
-          flexibility: "1h"
-        modifiers:
-          application: "block_end"
-          effects: 
-            hygiene: { amount: -20.0, over: "5h", curve: "linear" }
-            leisure: { amount: -20.0, over: "5h", curve: "linear" }
+        blocks:
+          - block_id: "lectures"
+            probability: 1.0
+            duration: { type: "normal", mean: "5h", std_dev: "45m" }
+            modifiers:
+              hygiene: { amount: -20.0, over: "5h", curve: "linear" }
+              leisure: { amount: -20.0, over: "5h", curve: "linear" }
+              energy: { amount: -20.0, over: "5h", curve: "linear" }
+              hunger: { amount: -30.0, over: "5h", curve: "linear" }

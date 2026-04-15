@@ -1,61 +1,44 @@
-# catalogs/actions/leisure/analog_leisure.yaml
 actions:
   - id: "read_book"
-    requires_device_tag: "" # No hardware required
+    requires_device_tag: ""
     template:
       action_id: "read_book"
       interruptible: true
       initiation_friction: 5.0
       satisfies:
-        leisure:
-          amount: 35.0
-          curve: "linear"
+        leisure: { amount: 35.0, curve: "linear" }
       costs:
-        energy: 5.0 # Mental fatigue
-      duration: 
-        type: 1 # Normal Distribution
-        mean: "1h"
-        std_dev: "15m"
+        energy: 5.0
+      duration: { type: "normal", mean: "1h", std_dev: "15m" }
 
   - id: "play_board_game"
     requires_device_tag: ""
     template:
       action_id: "play_board_game"
       interruptible: true
-      initiation_friction: 15.0 # Harder to set up and commit to
+      initiation_friction: 15.0
       satisfies:
-        leisure:
-          amount: 50.0
-          curve: "ease_out"
+        leisure: { amount: 50.0, curve: "ease_out" }
       costs:
         energy: 10.0
-      duration: 
-        type: 1
-        mean: "1h30m"
-        std_dev: "20m"
+      duration: { type: "normal", mean: "1h30m", std_dev: "20m" }
 
   - id: "gardening"
     requires_device_tag: ""
     template:
       action_id: "gardening"
       interruptible: true
-      initiation_friction: 20.0 # Hard work!
+      initiation_friction: 20.0
       satisfies:
-        leisure:
-          amount: 60.0
-          curve: "front_loaded"
+        leisure: { amount: 60.0, curve: "ease_out" }
       costs:
-        energy: 30.0 # Very tiring
-        hygiene: 20.0 # Makes them dirty, maybe forcing a shower later!
-      duration: 
-        type: 1
-        mean: "2h"
-        std_dev: "30m"
-      # Environmental Constraints: Only available during daylight
+        energy: 30.0 
+        hygiene: 20.0
+      duration: { type: "normal", mean: "2h", std_dev: "30m" }
       available_when:
         - context_key: "time.hour"
-          operator: 2 # GreaterThan
+          operator: ">"
           value: "7.0"
         - context_key: "time.hour"
-          operator: 3 # LessThan
+          operator: "<"
           value: "19.0"

@@ -8,13 +8,14 @@ actions:
       sharing:
         type: "scalable"
         gathering_window: "15m"
-        duration_multiplier_per_actor: 0.1 # Cooking for 3 takes slightly longer than cooking for 1
+        duration_multiplier_per_actor: 0.1
         max_participants: 6
       satisfies:
         hunger: { amount: 70.0, curve: "linear" }
-        energy: { amount: 10.0, curve: "back_loaded" }
-      costs: { energy: 15.0 }
-      duration: { type: 1, mean: "45m", std_dev: "10m" }
+        energy: { amount: 10.0, curve: "ease_in" } # Replaced back_loaded
+      costs: 
+        energy: 15.0 # Scalar shorthand for SampleSpace
+      duration: { type: "normal", mean: "45m", std_dev: "10m" }
       bonus_curves:
         - context_key: "time.hour_float"
           peak: 19.0
@@ -32,10 +33,11 @@ actions:
         gathering_window: "10m"
         duration_multiplier_per_actor: 0.2
         max_participants: 4
-      costs: { energy: 5.0 }
+      costs: 
+        energy: 5.0
       satisfies:
         hunger: { amount: 60.0, curve: "linear" }
-      duration: { type: 1, mean: "25m", std_dev: "5m" }
+      duration: { type: "normal", mean: "25m", std_dev: "5m" }
       bonus_curves:
         - context_key: "time.hour_float"
           peak: 8.0
@@ -50,7 +52,7 @@ actions:
       initiation_friction: 5.0
       satisfies:
         hunger: { amount: 50.0, curve: "linear" }
-      duration: { type: 1, mean: "15m", std_dev: "3m" }
+      duration: { type: "normal", mean: "15m", std_dev: "3m" }
       bonus_curves:
         - context_key: "time.hour_float"
           peak: 13.0
@@ -65,7 +67,7 @@ actions:
       initiation_friction: 10.0
       satisfies:
         hunger: { amount: 60.0, curve: "linear" }
-      duration: { type: 1, mean: "15m", std_dev: "3m" }
+      duration: { type: "normal", mean: "15m", std_dev: "3m" }
       bonus_curves:
         - context_key: "time.hour_float"
           peak: 13.0

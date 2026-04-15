@@ -29,7 +29,7 @@ func TestCSVReporter_WritesCorrectly(t *testing.T) {
 	}
 
 	// Test Power Writing
-	err = reporter.AddPowerUsage("house_1", simTime, 2500.5, 21.0, 55.0, []string{"oven_1", "tv_1"})
+	err = reporter.AddPowerUsage("house_1", simTime, 2500.5, 21.0, 22.0, 55.0, []string{"oven_1", "tv_1"})
 	if err != nil {
 		t.Errorf("AddPowerUsage failed: %v", err)
 	}

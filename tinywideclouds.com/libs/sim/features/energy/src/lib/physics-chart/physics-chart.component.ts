@@ -32,12 +32,14 @@ export class PhysicsChartComponent {
     const timeData: number[] = [];
     const avgWattsData: number[] = [];
     const indoorTempData: number[] = [];
+    const outdoorTempData: number[] = [];
     const tankTempData: number[] = [];
 
     for (const row of powerData) {
       timeData.push(row.timestamp.epochMilliseconds);
       avgWattsData.push(row.avgWatts);
       indoorTempData.push(row.indoorTempC);
+      outdoorTempData.push(row.outdoorTempC);
       tankTempData.push(row.tankTempC);
     }
 
@@ -55,7 +57,7 @@ export class PhysicsChartComponent {
           return res;
         }
       },
-      legend: { data: ['Avg Power', 'Indoor Temp', 'Tank Temp'], top: 0 },
+      legend: { data: ['Avg Power', 'Indoor Temp', 'Outdoor Temp', 'Tank Temp'], top: 0 },
       // LOCKED GRID: Matches the other charts exactly
       grid: { left: '60px', right: '60px', top: '15%', bottom: '15%' },
       xAxis: {
@@ -75,6 +77,7 @@ export class PhysicsChartComponent {
       series: [
         { name: 'Avg Power', type: 'line', step: 'end', yAxisIndex: 0, areaStyle: { opacity: 0.2 }, lineStyle: { color: '#e6a23c', width: 2 }, itemStyle: { color: '#e6a23c' }, data: timeData.map((time, idx) => [time, avgWattsData[idx]]) },
         { name: 'Indoor Temp', type: 'line', smooth: true, yAxisIndex: 1, lineStyle: { color: '#67c23a', width: 2 }, itemStyle: { color: '#67c23a' }, data: timeData.map((time, idx) => [time, indoorTempData[idx]]) },
+        { name: 'Outdoor Temp', type: 'line', smooth: true, yAxisIndex: 1, lineStyle: { color: '#398ba4', width: 2 }, itemStyle: { color: '#398ba4' }, data: timeData.map((time, idx) => [time, outdoorTempData[idx]]) },
         { name: 'Tank Temp', type: 'line', smooth: true, yAxisIndex: 1, lineStyle: { color: '#f56c6c', width: 2 }, itemStyle: { color: '#f56c6c' }, data: timeData.map((time, idx) => [time, tankTempData[idx]]) }
       ]
     } as EChartsOption;

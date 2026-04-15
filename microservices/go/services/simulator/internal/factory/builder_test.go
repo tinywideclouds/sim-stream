@@ -1,10 +1,9 @@
-// internal/factory/builder_test.go
 package factory
 
 import (
 	"testing"
 
-	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
+	"github.com/tinywideclouds/go-maths/pkg/probability"
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
@@ -15,12 +14,12 @@ func TestHouseholdGenerator_Generate_Schedules(t *testing.T) {
 		ID:        "adult_test",
 		Type:      "adult",
 		Frequency: 100,
-		StartingMeters: map[string]domain.ProbabilityDistribution{
-			"energy": {Type: domain.DistributionTypeConstant, Value: "80.0"},
+		StartingMeters: map[string]probability.SampleSpace{
+			"energy": {Type: probability.ConstantDistribution, Const: 80.0},
 		},
 		Biology: map[string]domain.BiologyConfig{
 			"hunger": {
-				DecayPerHour:     domain.ProbabilityDistribution{Type: domain.DistributionTypeConstant, Value: "5.5"},
+				DecayPerHour:     probability.SampleSpace{Type: probability.ConstantDistribution, Const: 5.5},
 				PhaseMultipliers: map[string]float64{"sleep": 0.1},
 			},
 		},
@@ -46,12 +45,12 @@ func TestHouseholdGenerator_Generate_Schedules(t *testing.T) {
 		},
 	})
 
-	sampler := generator.NewSampler([32]byte{})
-	builder := NewHouseholdGenerator(reg, sampler)
+	baseSampler := probability.NewSampler([32]byte{})
+	distSampler := probability.NewDistributionSampler(baseSampler)
+	builder := NewHouseholdGenerator(reg, distSampler)
 
 	req := GenerationRequest{
 		ArchetypeID: "test_household",
-		// Replace explicit PersonaIDs with requirements bounding Min/Max counts
 		PersonaRequirements: []PersonaRequirement{
 			{Type: "adult", Min: 1, Max: 1},
 		},
@@ -69,8 +68,8 @@ func TestHouseholdGenerator_Generate_Schedules(t *testing.T) {
 		t.Fatalf("Expected exactly 1 actor, got %d", len(node.Actors))
 	}
 
-	// Verify the Instantiated Gaussian values
 	actor := node.Actors[0]
+	// Tests the float64 instantiation outcome
 	if actor.StartingMeters["energy"] != 80.0 {
 		t.Errorf("Expected starting energy 80.0, got %f", actor.StartingMeters["energy"])
 	}
@@ -93,8 +92,9 @@ func TestHouseholdGenerator_Generate_Schedules(t *testing.T) {
 
 func TestHouseholdGenerator_Generate_MissingSchedule(t *testing.T) {
 	reg := NewRegistry()
-	sampler := generator.NewSampler([32]byte{})
-	builder := NewHouseholdGenerator(reg, sampler)
+	baseSampler := probability.NewSampler([32]byte{})
+	distSampler := probability.NewDistributionSampler(baseSampler)
+	builder := NewHouseholdGenerator(reg, distSampler)
 
 	req := GenerationRequest{
 		ArchetypeID: "test_household",

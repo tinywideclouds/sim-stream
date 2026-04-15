@@ -1,15 +1,13 @@
-// domain/schedule_test.go
 package domain
 
 import (
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/tinywideclouds/go-maths/pkg/probability"
 	"gopkg.in/yaml.v3"
 )
 
-// testActorWrapper is used to isolate the test from changes to the full Actor struct
 type testActorWrapper struct {
 	ActorID string  `yaml:"actor_id"`
 	Type    string  `yaml:"type"`
@@ -27,37 +25,48 @@ phases:
     type: "sleep"
     anchor_time: "23:00"
     gravity: 0.2
-    duration:
-      type: 0 # Constant
-      value: "8h"
-      flexibility: "2h"
-    modifiers:
-      application: "continuous"
-      effects:
-        energy:
-          amount: 75.0
-          over: "8h"
-          curve: "front_loaded"
-  - phase_id: "work_shift"
+    blocks:
+      - block_id: "core_sleep"
+        probability: 1.0
+        duration: "8h" # Testing the elegant scalar shorthand!
+        modifiers:
+          energy:
+            amount: 75.0
+            over: "8h"
+            curve: "front_loaded"
+  - phase_id: "work_trip"
     type: "away"
     anchor_time: "08:30"
     gravity: 0.9
-    duration:
-      type: 1 # Normal Distribution
-      mean: "8h30m"
-      std_dev: "30m"
-      flexibility: "30m"
-    modifiers:
-      application: "block_end"
-      effects:
-        hunger:
-          amount: -80.0
-          over: "8h30m"
-          curve: "linear"
+    blocks:
+      - block_id: "morning_commute"
+        probability: 1.0
+        duration:
+          type: "normal"
+          mean: "45m"
+          std_dev: "10m"
+          modifiers:
+            - condition:
+                context_key: "weather.is_raining"
+                operator: "=="
+                value: "true"
+              shift_mean: "15m" # A 15 min delay if it's raining
+        modifiers:
+          energy:
+            amount: -5.0
+      - block_id: "office_shift"
+        probability: 0.8
+        duration:
+          type: "normal"
+          mean: "8h"
+          std_dev: "30m"
+        modifiers:
+          hunger:
+            amount: -40.0
+            over: "8h"
 `
-
 	var actor testActorWrapper
-	err := yaml.Unmarshal([]byte(strings.TrimSpace(yamlInput)), &actor)
+	err := yaml.Unmarshal([]byte(yamlInput), &actor)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal YAML: %v", err)
 	}
@@ -66,61 +75,63 @@ phases:
 		t.Fatalf("Expected 2 phases, got %d", len(actor.Phases))
 	}
 
-	// 1. Validate the Elastic Sleep Phase
+	// 1. Validate Sleep Phase (Testing scalar fallback logic)
 	sleepPhase := actor.Phases[0]
-	if sleepPhase.Type != string(PhaseTypeSleep) {
-		t.Errorf("Expected phase type 'sleep', got '%s'", sleepPhase.Type)
+	if sleepPhase.PhaseID != "night_sleep" || sleepPhase.Type != PhaseTypeSleep {
+		t.Errorf("Sleep phase parsed incorrectly")
 	}
-	if sleepPhase.Gravity != 0.2 {
-		t.Errorf("Expected gravity 0.2, got %f", sleepPhase.Gravity)
-	}
-
-	// Validate yaml.v3 parsed the human-readable flexibility string into a time.Duration
-	if sleepPhase.Duration.Flexibility != 2*time.Hour {
-		t.Errorf("Expected flexibility to parse as 2h, got %v", sleepPhase.Duration.Flexibility)
-	}
-	if sleepPhase.Modifiers.Application != string(Continuous) {
-		t.Errorf("Expected continuous application, got %s", sleepPhase.Modifiers.Application)
+	if len(sleepPhase.Blocks) != 1 {
+		t.Fatalf("Expected 1 block in sleep phase")
 	}
 
-	// Validate the nested ContinuousEffect profile
-	sleepEnergy, exists := sleepPhase.Modifiers.Effects["energy"]
-	if !exists {
-		t.Fatalf("Expected energy effect to be parsed")
+	sleepBlock := sleepPhase.Blocks[0]
+	if sleepBlock.Duration.Base.Type != probability.ConstantDistribution {
+		t.Errorf("Expected ConstantDistribution for scalar duration, got %v", sleepBlock.Duration.Base.Type)
 	}
-	if sleepEnergy.Amount != 75.0 {
-		t.Errorf("Expected energy amount 75.0, got %f", sleepEnergy.Amount)
-	}
-	if sleepEnergy.Over != 8*time.Hour {
-		t.Errorf("Expected energy over to parse as 8h, got %v", sleepEnergy.Over)
-	}
-	if sleepEnergy.Curve != "front_loaded" {
-		t.Errorf("Expected front_loaded curve, got %s", sleepEnergy.Curve)
+	if sleepBlock.Duration.Base.Const != float64(8*time.Hour) {
+		t.Errorf("Expected const value %f, got %f", float64(8*time.Hour), sleepBlock.Duration.Base.Const)
 	}
 
-	// 2. Validate the Strict Work Phase
+	sleepEnergy := sleepBlock.Modifiers["energy"]
+	if sleepEnergy.Amount != 75.0 || sleepEnergy.Over != 8*time.Hour || sleepEnergy.Curve != "front_loaded" {
+		t.Errorf("Sleep energy parsed incorrectly: %+v", sleepEnergy)
+	}
+
+	// 2. Validate Work Trip Phase (Testing full struct with math modifiers)
 	workPhase := actor.Phases[1]
-	if workPhase.Type != string(PhaseTypeAway) {
+	if workPhase.Type != PhaseTypeAway {
 		t.Errorf("Expected phase type 'away', got '%s'", workPhase.Type)
 	}
-	if workPhase.Duration.Flexibility != 30*time.Minute {
-		t.Errorf("Expected flexibility to parse as 30m, got %v", workPhase.Duration.Flexibility)
-	}
-	if workPhase.Modifiers.Application != string(BlockEnd) {
-		t.Errorf("Expected block_end application, got %s", workPhase.Modifiers.Application)
+	if len(workPhase.Blocks) != 2 {
+		t.Fatalf("Expected 2 blocks in work phase")
 	}
 
-	workHunger, exists := workPhase.Modifiers.Effects["hunger"]
-	if !exists {
-		t.Fatalf("Expected hunger effect to be parsed")
+	commuteBlock := workPhase.Blocks[0]
+	if commuteBlock.Duration.Base.Type != probability.NormalDistribution {
+		t.Errorf("Expected NormalDistribution, got %v", commuteBlock.Duration.Base.Type)
 	}
-	if workHunger.Amount != -80.0 {
-		t.Errorf("Expected hunger modifier -80.0, got %f", workHunger.Amount)
+	if commuteBlock.Duration.Base.Mean != float64(45*time.Minute) {
+		t.Errorf("Expected mean 45m, got %f", commuteBlock.Duration.Base.Mean)
 	}
 
-	// Complex duration check (8h30m)
-	expectedWorkDur := 8*time.Hour + 30*time.Minute
-	if workHunger.Over != expectedWorkDur {
-		t.Errorf("Expected hunger over to parse as 8h30m, got %v", workHunger.Over)
+	// Check that the engine condition and compiled geom.Transform survived the parsing chain!
+	if len(commuteBlock.Duration.Modifiers) != 1 {
+		t.Fatalf("Expected 1 modifier on commute duration")
+	}
+	if commuteBlock.Duration.Modifiers[0].Condition.ContextKey != "weather.is_raining" {
+		t.Errorf("Expected condition context key 'weather.is_raining'")
+	}
+	if commuteBlock.Duration.Modifiers[0].CompiledTransform.FlatShift != float64(15*time.Minute) {
+		t.Errorf("Expected flat shift of 15m")
+	}
+
+	officeBlock := workPhase.Blocks[1]
+	if officeBlock.Probability != 0.8 {
+		t.Errorf("Expected 0.8 probability, got %f", officeBlock.Probability)
+	}
+
+	workHunger := officeBlock.Modifiers["hunger"]
+	if workHunger.Amount != -40.0 {
+		t.Errorf("Expected hunger -40.0, got %f", workHunger.Amount)
 	}
 }

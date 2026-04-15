@@ -1,0 +1,25 @@
+# catalogs/systems/water.yaml
+water_systems:
+  - id: "tank_budget_120L"
+    tags: ["small_residential", "budget"]
+    template:
+      tank_capacity_liters: 120.0
+      mains_water_temp_celsius: 10.0
+      max_tank_temp_celsius: 60.0
+      standby_temperature_loss_tick: 0.005
+
+  - id: "tank_standard_250L"
+    tags: ["large_residential", "standard"]
+    template:
+      tank_capacity_liters: 250.0
+      mains_water_temp_celsius: 10.0
+      max_tank_temp_celsius: 60.0
+      standby_temperature_loss_tick: 0.003
+      
+  - id: "tank_premium_300L"
+    tags: ["large_residential", "premium"]
+    template:
+      tank_capacity_liters: 300.0
+      mains_water_temp_celsius: 10.0
+      max_tank_temp_celsius: 60.0
+      standby_temperature_loss_tick: 0.002

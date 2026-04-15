@@ -3,6 +3,7 @@ package reporting
 import (
 	"encoding/csv"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,7 +16,7 @@ type ActorReporter interface {
 }
 
 type PowerReporter interface {
-	AddPowerUsage(householdID string, simTime time.Time, totalWatts, indoorTempC, tankTempC float64, activeDevices []string) error
+	AddPowerUsage(householdID string, simTime time.Time, totalWatts, indoorTempC, externalTempC, tankTempC float64, activeDevices []string) error
 }
 
 type MeterReporter interface {
@@ -49,7 +50,7 @@ func NewCSVReporter(outDir string) (*CSVReporter, error) {
 		return nil, err
 	}
 	pCsv := csv.NewWriter(pFile)
-	pCsv.Write([]string{"HouseholdID", "Timestamp", "TotalWatts", "IndoorTempC", "TankTempC", "ActiveDevices"})
+	pCsv.Write([]string{"HouseholdID", "Timestamp", "TotalWatts", "IndoorTempC", "OutdoorTempC", "TankTempC", "ActiveDevices"})
 
 	mFile, err := os.Create(filepath.Join(outDir, "_actor_meters.csv"))
 	if err != nil {
@@ -82,12 +83,15 @@ func (r *CSVReporter) AddActorAction(householdID, actorID, actionID string, isSh
 	})
 }
 
-func (r *CSVReporter) AddPowerUsage(householdID string, simTime time.Time, totalWatts, indoorTempC, tankTempC float64, activeDevices []string) error {
+func (r *CSVReporter) AddPowerUsage(householdID string, simTime time.Time, totalWatts, indoorTempC, externalTempC, tankTempC float64, activeDevices []string) error {
+	slog.Warn("TELEMETRY", "timestamp", simTime, "totalWatts", totalWatts, "indoorTempC", indoorTempC, "externalTempC", externalTempC, "tankTempC", tankTempC, "activeDevices", activeDevices)
+
 	return r.powerCsv.Write([]string{
 		householdID,
 		simTime.Format(time.RFC3339),
 		fmt.Sprintf("%.2f", totalWatts),
 		fmt.Sprintf("%.2f", indoorTempC),
+		fmt.Sprintf("%.2f", externalTempC),
 		fmt.Sprintf("%.2f", tankTempC),
 		strings.Join(activeDevices, "|"),
 	})

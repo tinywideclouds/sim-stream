@@ -1,9 +1,8 @@
-# catalogs/devices/cooking/cookers.yaml
 devices:
   - id: "electric_oven_standard"
     tags: ["cooking_high_load", "oven", "essential_cooking"]
     template:
-      taxonomy: { category: 1 } # Cooking/Small Appliances
+      taxonomy: { category: 1, class_name: "electric_oven" }
       electrical_profile: 
         type: 1
         max_watts: 3000.0
@@ -12,17 +11,17 @@ devices:
   - id: "induction_hob_large"
     tags: ["cooking_high_load", "hob", "essential_cooking"]
     template:
-      taxonomy: { category: 1 }
+      taxonomy: { category: 1, class_name: "induction_hob" }
       electrical_profile: 
         type: 1
-        max_watts: 7200.0 # Extremely spiky load when all rings are active
+        max_watts: 7200.0
         standby_watts: 5.0
 
   - id: "freestanding_electric_range"
     tags: ["cooking_high_load", "oven", "hob", "essential_cooking"]
     template:
-      taxonomy: { category: 1 }
+      taxonomy: { category: 1, class_name: "electric_range" }
       electrical_profile: 
         type: 1
-        max_watts: 8500.0 # Oven + rings combined max
+        max_watts: 8500.0 
         standby_watts: 3.0

@@ -1,4 +1,3 @@
-# catalogs/personas/children.yaml
 personas:
   - id: "child_standard"
     type: "child"
@@ -25,29 +24,26 @@ personas:
         type: "sleep"
         anchor_time: "20:30"
         gravity: 0.1
-        duration:
-          type: "constant"
-          value: "10h"
-          flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -50.0, over: "10h", curve: "linear" }
-            leisure: { amount: 10.0, over: "10h", curve: "linear" }
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "10h", std_dev: "1h" }
+            modifiers:
+              hygiene: { amount: -50.0, over: "10h", curve: "linear" }
+              leisure: { amount: 10.0, over: "10h", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:30"
         gravity: 0.9
-        duration: 
-          type: "normal" 
-          mean: "7h"
-          std_dev: "10m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects: 
-            hygiene: { amount: -30.0, over: "7h", curve: "linear" }
-            leisure: { amount: -10.0, over: "7h", curve: "linear" }
+        blocks:
+          - block_id: "school"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "15m" }
+            modifiers:
+              hygiene: { amount: -30.0, over: "7h", curve: "linear" }
+              leisure: { amount: -10.0, over: "7h", curve: "linear" }
+              energy: { amount: -35.0, over: "7h", curve: "linear" }
+              hunger: { amount: -40.0, over: "7h", curve: "linear" }
 
   - id: "child_sports_club"
     type: "child"
@@ -74,29 +70,26 @@ personas:
         type: "sleep"
         anchor_time: "21:00"
         gravity: 0.1
-        duration:
-          type: "constant"
-          value: "9h30m"
-          flexibility: "2h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -50.0, over: "10h", curve: "linear" }
-            leisure: { amount: 10.0, over: "10h", curve: "linear" }
-      - phase_id: "school_and_sports"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "9h30m", std_dev: "1h" }
+            modifiers:
+              hygiene: { amount: -50.0, over: "9h30m", curve: "linear" }
+              leisure: { amount: 10.0, over: "9h30m", curve: "linear" }
+      - phase_id: "school_day"
         type: "away"
         anchor_time: "08:00"
         gravity: 0.95
-        duration:
-          type: "normal"
-          mean: "9h"
-          std_dev: "20m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -80.0, over: "9h", curve: "linear" }
-            leisure: { amount: 20.0, over: "9h", curve: "linear" }
+        blocks:
+          - block_id: "school_and_sports"
+            probability: 1.0
+            duration: { type: "normal", mean: "9h", std_dev: "20m" }
+            modifiers:
+              hygiene: { amount: -80.0, over: "9h", curve: "linear" }
+              leisure: { amount: 20.0, over: "9h", curve: "linear" }
+              energy: { amount: -55.0, over: "9h", curve: "linear" }
+              hunger: { amount: -60.0, over: "9h", curve: "linear" }
 
   - id: "child_gamer"
     type: "child"
@@ -123,29 +116,26 @@ personas:
         type: "sleep"
         anchor_time: "23:00"
         gravity: 0.1
-        duration:
-          type: "constant"
-          value: "8h"
-          flexibility: "3h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -30.0, over: "8h", curve: "linear" }
-            leisure: { amount: +20.0, over: "8h", curve: "linear" }
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "8h", std_dev: "1h" }
+            modifiers:
+              hygiene: { amount: -30.0, over: "8h", curve: "linear" }
+              leisure: { amount: 20.0, over: "8h", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
         anchor_time: "08:30"
         gravity: 0.85
-        duration:
-          type: "normal"
-          mean: "7h"
-          std_dev: "10m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -20.0, over: "7h", curve: "linear" }
-            leisure: { amount: -50.0, over: "7h", curve: "linear" }
+        blocks:
+          - block_id: "school"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "15m" }
+            modifiers:
+              hygiene: { amount: -20.0, over: "7h", curve: "linear" }
+              leisure: { amount: -50.0, over: "7h", curve: "linear" }
+              energy: { amount: -30.0, over: "7h", curve: "linear" }
+              hunger: { amount: -35.0, over: "7h", curve: "linear" }
 
   - id: "child_toddler"
     type: "child"
@@ -172,42 +162,37 @@ personas:
         type: "sleep"
         anchor_time: "19:00"
         gravity: 0.3
-        duration:
-          type: "constant"
-          value: "12h"
-          flexibility: "3h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -50.0, over: "12h", curve: "linear" }
-            leisure: { amount: 10.0, over: "12h", curve: "linear" }
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "12h", std_dev: "1h30m" }
+            modifiers:
+              hygiene: { amount: -50.0, over: "12h", curve: "linear" }
+              leisure: { amount: 10.0, over: "12h", curve: "linear" }
       - phase_id: "afternoon_nap"
         type: "sleep"
         anchor_time: "13:00"
         gravity: 0.6
-        duration:
-          type: "constant"
-          value: "2h"
-          flexibility: "1h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -10.0, over: "2h", curve: "linear" }
-            leisure: { amount: 2.0, over: "2h", curve: "linear" }
+        blocks:
+          - block_id: "nap"
+            probability: 1.0
+            duration: { type: "normal", mean: "2h", std_dev: "30m" }
+            modifiers:
+              hygiene: { amount: -10.0, over: "2h", curve: "linear" }
+              leisure: { amount: 2.0, over: "2h", curve: "linear" }
       - phase_id: "daycare"
         type: "away"
         anchor_time: "09:00"
         gravity: 0.8
-        duration: 
-          type: "normal" 
-          mean: "6h"
-          std_dev: "30m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects: 
-            hygiene: { amount: -50.0, over: "6h", curve: "linear" }
-            leisure: { amount: 10.0, over: "6h", curve: "linear" }
+        blocks:
+          - block_id: "daycare_session"
+            probability: 1.0
+            duration: { type: "normal", mean: "6h", std_dev: "30m" }
+            modifiers:
+              hygiene: { amount: -50.0, over: "6h", curve: "linear" }
+              leisure: { amount: 10.0, over: "6h", curve: "linear" }
+              energy: { amount: -30.0, over: "6h", curve: "linear" }
+              hunger: { amount: -40.0, over: "6h", curve: "linear" }
 
   - id: "child_teen_rebel"
     type: "child"
@@ -234,26 +219,23 @@ personas:
         type: "sleep"
         anchor_time: "01:00"
         gravity: 0.1
-        duration:
-          type: "constant"
-          value: "6h30m"
-          flexibility: "4h"
-        modifiers:
-          application: "continuous"
-          effects:
-            hygiene: { amount: -40.0, over: "6h30m", curve: "linear" }
-            leisure: { amount: 10.0, over: "6h30m", curve: "linear" }
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "6h30m", std_dev: "1h30m" }
+            modifiers:
+              hygiene: { amount: -40.0, over: "6h30m", curve: "linear" }
+              leisure: { amount: 10.0, over: "6h30m", curve: "linear" }
       - phase_id: "school_day"
         type: "away"
-        anchor_time: "08:45" 
+        anchor_time: "08:45"
         gravity: 0.8
-        duration:
-          type: "normal"
-          mean: "7h"
-          std_dev: "30m"
-          flexibility: "1h"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -20.0, over: "7h", curve: "linear" }
-            leisure: { amount: -20.0, over: "7h", curve: "linear" }
+        blocks:
+          - block_id: "school"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "30m" }
+            modifiers:
+              hygiene: { amount: -20.0, over: "7h", curve: "linear" }
+              leisure: { amount: -20.0, over: "7h", curve: "linear" }
+              energy: { amount: -30.0, over: "7h", curve: "linear" }
+              hunger: { amount: -35.0, over: "7h", curve: "linear" }

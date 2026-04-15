@@ -1,31 +1,33 @@
-# catalogs/devices/climate/heating.yaml
 devices:
-  # 1. The Gas Boiler (Low electrical draw, high thermal output)
   - id: "gas_combi_boiler"
     tags: ["heating_system", "gas_appliance"]
     template:
-      taxonomy: { category: 2 } # Climate Control
+      taxonomy: { category: 2, class_name: "gas_boiler" } 
+      thermal_profile:
+        radiated_watts: 24000.0
       electrical_profile: 
         type: 1
-        max_watts: 60.0 # Just the circulation pump and electronics
+        max_watts: 60.0 
         standby_watts: 5.0
+        # The pump needs time before firing again
+        cooldown_duration: { type: "normal", mean: "15m", std_dev: "2m" }
 
-  # 2. The Electric Boiler (Massive electrical draw)
   - id: "electric_flow_boiler"
     tags: ["heating_system", "electric_heating"]
     template:
-      taxonomy: { category: 2 }
+      taxonomy: { category: 2, class_name: "electric_boiler" }
       electrical_profile: 
         type: 1
-        max_watts: 12000.0 # 12kW peak draw for whole-house heating
+        max_watts: 12000.0 
         standby_watts: 2.0
+        cooldown_duration: { type: "normal", mean: "10m", std_dev: "1m" }
 
-  # 3. The Immersion Heater (For the hot water tank)
   - id: "immersion_heater_standard"
     tags: ["water_heating", "tank_heater"]
     template:
-      taxonomy: { category: 6 } # Water Heating
+      taxonomy: { category: 6, class_name: "immersion_heater" } 
       electrical_profile: 
         type: 1
         max_watts: 3000.0
         standby_watts: 0.0
+        cooldown_duration: "30m" # Beautiful scalar shorthand!

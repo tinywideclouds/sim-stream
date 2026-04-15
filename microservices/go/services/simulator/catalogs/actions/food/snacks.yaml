@@ -1,13 +1,13 @@
 actions:
   - id: "quick_cold_breakfast"
-    requires_device_tag: "refrigeration" # Grab milk/cereal or yogurt
+    requires_device_tag: "refrigeration"
     template:
       action_id: "quick_cold_breakfast"
       interruptible: true
       initiation_friction: 2.0
       satisfies:
-        hunger: { amount: 35.0, curve: "front_loaded" }
-      duration: { type: 1, mean: "10m", std_dev: "2m" }
+        hunger: { amount: 35.0, curve: "ease_out" }
+      duration: { type: "normal", mean: "10m", std_dev: "2m" }
       bonus_curves:
         - context_key: "time.hour_float"
           peak: 7.5
@@ -21,8 +21,8 @@ actions:
       interruptible: true
       initiation_friction: 2.0 
       satisfies:
-        hunger: { amount: 45.0, curve: "front_loaded" }
-      duration: { type: 1, mean: "5m", std_dev: "1m" }
+        hunger: { amount: 45.0, curve: "ease_out" }
+      duration: { type: "normal", mean: "5m", std_dev: "1m" }
 
   - id: "make_toast_snack"
     requires_device_tag: "toaster" 
@@ -32,4 +32,4 @@ actions:
       initiation_friction: 1.0
       satisfies:
         hunger: { amount: 15.0, curve: "linear" }
-      duration: { type: 3, value: "3m" }
+      duration: "3m"

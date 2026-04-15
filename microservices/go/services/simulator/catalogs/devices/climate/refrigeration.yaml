@@ -1,19 +1,21 @@
-# catalogs/devices/climate/refrigeration.yaml
 devices:
   - id: "fridge_freezer_standard"
     tags: ["refrigeration", "always_on"]
     template:
-      taxonomy: { category: 3 } # Cold Appliance
+      taxonomy: { category: 3, class_name: "fridge_freezer" }
       electrical_profile: 
         type: 1
-        max_watts: 150.0 # Compressor active
-        standby_watts: 10.0 # Electronics and idle
+        max_watts: 150.0 
+        standby_watts: 10.0 
+        # Organic compressor cycle variance
+        cooldown_duration: { type: "normal", mean: "40m", std_dev: "5m" }
 
   - id: "fridge_freezer_american"
     tags: ["refrigeration", "always_on", "high_capacity"]
     template:
-      taxonomy: { category: 3 }
+      taxonomy: { category: 3, class_name: "american_fridge" }
       electrical_profile: 
         type: 1
         max_watts: 300.0
         standby_watts: 25.0
+        cooldown_duration: { type: "normal", mean: "35m", std_dev: "5m" }

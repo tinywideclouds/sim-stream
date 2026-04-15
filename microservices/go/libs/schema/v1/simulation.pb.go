@@ -480,6 +480,7 @@ type ProbabilityDistribution struct {
 	Min           float64                 `protobuf:"fixed64,5,opt,name=min,proto3" json:"min,omitempty"`                   // For uniform
 	Max           float64                 `protobuf:"fixed64,6,opt,name=max,proto3" json:"max,omitempty"`                   // For uniform
 	Modifiers     []*DistributionModifier `protobuf:"bytes,7,rep,name=modifiers,proto3" json:"modifiers,omitempty"`
+	Timeframe     string                  `protobuf:"bytes,8,opt,name=timeframe,proto3" json:"timeframe,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -561,6 +562,13 @@ func (x *ProbabilityDistribution) GetModifiers() []*DistributionModifier {
 		return x.Modifiers
 	}
 	return nil
+}
+
+func (x *ProbabilityDistribution) GetTimeframe() string {
+	if x != nil {
+		return x.Timeframe
+	}
+	return ""
 }
 
 type FatigueRule struct {
@@ -743,19 +751,64 @@ func (x *DeviceProfile) GetCooldownDuration() string {
 	return ""
 }
 
+type ThermalProfile struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	RadiatedWatts float64                `protobuf:"fixed64,1,opt,name=radiated_watts,json=radiatedWatts,proto3" json:"radiated_watts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ThermalProfile) Reset() {
+	*x = ThermalProfile{}
+	mi := &file_src_lib_simulation_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ThermalProfile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ThermalProfile) ProtoMessage() {}
+
+func (x *ThermalProfile) ProtoReflect() protoreflect.Message {
+	mi := &file_src_lib_simulation_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ThermalProfile.ProtoReflect.Descriptor instead.
+func (*ThermalProfile) Descriptor() ([]byte, []int) {
+	return file_src_lib_simulation_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ThermalProfile) GetRadiatedWatts() float64 {
+	if x != nil {
+		return x.RadiatedWatts
+	}
+	return 0
+}
+
 type DeviceTemplate struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	DeviceId          string                 `protobuf:"bytes,1,opt,name=device_id,json=deviceId,proto3" json:"device_id,omitempty"`
 	Taxonomy          *DeviceTaxonomy        `protobuf:"bytes,2,opt,name=taxonomy,proto3" json:"taxonomy,omitempty"`
 	Specifics         map[string]string      `protobuf:"bytes,3,rep,name=specifics,proto3" json:"specifics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // e.g., {"energy_rating": "A", "volume_liters": "1.5"}
 	ElectricalProfile *DeviceProfile         `protobuf:"bytes,4,opt,name=electrical_profile,json=electricalProfile,proto3" json:"electrical_profile,omitempty"`
+	ThermalProfile    *ThermalProfile        `protobuf:"bytes,5,opt,name=thermal_profile,json=thermalProfile,proto3" json:"thermal_profile,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *DeviceTemplate) Reset() {
 	*x = DeviceTemplate{}
-	mi := &file_src_lib_simulation_proto_msgTypes[6]
+	mi := &file_src_lib_simulation_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -767,7 +820,7 @@ func (x *DeviceTemplate) String() string {
 func (*DeviceTemplate) ProtoMessage() {}
 
 func (x *DeviceTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_src_lib_simulation_proto_msgTypes[6]
+	mi := &file_src_lib_simulation_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -780,7 +833,7 @@ func (x *DeviceTemplate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeviceTemplate.ProtoReflect.Descriptor instead.
 func (*DeviceTemplate) Descriptor() ([]byte, []int) {
-	return file_src_lib_simulation_proto_rawDescGZIP(), []int{6}
+	return file_src_lib_simulation_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeviceTemplate) GetDeviceId() string {
@@ -811,6 +864,13 @@ func (x *DeviceTemplate) GetElectricalProfile() *DeviceProfile {
 	return nil
 }
 
+func (x *DeviceTemplate) GetThermalProfile() *ThermalProfile {
+	if x != nil {
+		return x.ThermalProfile
+	}
+	return nil
+}
+
 type Trigger struct {
 	state          protoimpl.MessageState   `protogen:"open.v1"`
 	Type           TriggerType              `protobuf:"varint,1,opt,name=type,proto3,enum=simulation.v1.TriggerType" json:"type,omitempty"`
@@ -823,7 +883,7 @@ type Trigger struct {
 
 func (x *Trigger) Reset() {
 	*x = Trigger{}
-	mi := &file_src_lib_simulation_proto_msgTypes[7]
+	mi := &file_src_lib_simulation_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -835,7 +895,7 @@ func (x *Trigger) String() string {
 func (*Trigger) ProtoMessage() {}
 
 func (x *Trigger) ProtoReflect() protoreflect.Message {
-	mi := &file_src_lib_simulation_proto_msgTypes[7]
+	mi := &file_src_lib_simulation_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -848,7 +908,7 @@ func (x *Trigger) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Trigger.ProtoReflect.Descriptor instead.
 func (*Trigger) Descriptor() ([]byte, []int) {
-	return file_src_lib_simulation_proto_rawDescGZIP(), []int{7}
+	return file_src_lib_simulation_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Trigger) GetType() TriggerType {
@@ -892,7 +952,7 @@ type ScenarioAction struct {
 
 func (x *ScenarioAction) Reset() {
 	*x = ScenarioAction{}
-	mi := &file_src_lib_simulation_proto_msgTypes[8]
+	mi := &file_src_lib_simulation_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -904,7 +964,7 @@ func (x *ScenarioAction) String() string {
 func (*ScenarioAction) ProtoMessage() {}
 
 func (x *ScenarioAction) ProtoReflect() protoreflect.Message {
-	mi := &file_src_lib_simulation_proto_msgTypes[8]
+	mi := &file_src_lib_simulation_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -917,7 +977,7 @@ func (x *ScenarioAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScenarioAction.ProtoReflect.Descriptor instead.
 func (*ScenarioAction) Descriptor() ([]byte, []int) {
-	return file_src_lib_simulation_proto_rawDescGZIP(), []int{8}
+	return file_src_lib_simulation_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ScenarioAction) GetDeviceId() string {
@@ -960,7 +1020,7 @@ type ScenarioTemplate struct {
 
 func (x *ScenarioTemplate) Reset() {
 	*x = ScenarioTemplate{}
-	mi := &file_src_lib_simulation_proto_msgTypes[9]
+	mi := &file_src_lib_simulation_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -972,7 +1032,7 @@ func (x *ScenarioTemplate) String() string {
 func (*ScenarioTemplate) ProtoMessage() {}
 
 func (x *ScenarioTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_src_lib_simulation_proto_msgTypes[9]
+	mi := &file_src_lib_simulation_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -985,7 +1045,7 @@ func (x *ScenarioTemplate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScenarioTemplate.ProtoReflect.Descriptor instead.
 func (*ScenarioTemplate) Descriptor() ([]byte, []int) {
-	return file_src_lib_simulation_proto_rawDescGZIP(), []int{9}
+	return file_src_lib_simulation_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ScenarioTemplate) GetScenarioId() string {
@@ -1026,7 +1086,7 @@ type ActorTemplate struct {
 
 func (x *ActorTemplate) Reset() {
 	*x = ActorTemplate{}
-	mi := &file_src_lib_simulation_proto_msgTypes[10]
+	mi := &file_src_lib_simulation_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1038,7 +1098,7 @@ func (x *ActorTemplate) String() string {
 func (*ActorTemplate) ProtoMessage() {}
 
 func (x *ActorTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_src_lib_simulation_proto_msgTypes[10]
+	mi := &file_src_lib_simulation_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1051,7 +1111,7 @@ func (x *ActorTemplate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActorTemplate.ProtoReflect.Descriptor instead.
 func (*ActorTemplate) Descriptor() ([]byte, []int) {
-	return file_src_lib_simulation_proto_rawDescGZIP(), []int{10}
+	return file_src_lib_simulation_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ActorTemplate) GetActorId() string {
@@ -1084,7 +1144,7 @@ type NodeArchetype struct {
 
 func (x *NodeArchetype) Reset() {
 	*x = NodeArchetype{}
-	mi := &file_src_lib_simulation_proto_msgTypes[11]
+	mi := &file_src_lib_simulation_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1096,7 +1156,7 @@ func (x *NodeArchetype) String() string {
 func (*NodeArchetype) ProtoMessage() {}
 
 func (x *NodeArchetype) ProtoReflect() protoreflect.Message {
-	mi := &file_src_lib_simulation_proto_msgTypes[11]
+	mi := &file_src_lib_simulation_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1109,7 +1169,7 @@ func (x *NodeArchetype) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NodeArchetype.ProtoReflect.Descriptor instead.
 func (*NodeArchetype) Descriptor() ([]byte, []int) {
-	return file_src_lib_simulation_proto_rawDescGZIP(), []int{11}
+	return file_src_lib_simulation_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *NodeArchetype) GetArchetypeId() string {
@@ -1176,7 +1236,7 @@ const file_src_lib_simulation_proto_rawDesc = "" +
 	"\n" +
 	"shift_mean\x18\x02 \x01(\tR\tshiftMean\x12\x1f\n" +
 	"\vshift_value\x18\x03 \x01(\tR\n" +
-	"shiftValue\"\xf8\x01\n" +
+	"shiftValue\"\x96\x02\n" +
 	"\x17ProbabilityDistribution\x123\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x1f.simulation.v1.DistributionTypeR\x04type\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value\x12\x12\n" +
@@ -1184,7 +1244,8 @@ const file_src_lib_simulation_proto_rawDesc = "" +
 	"\astd_dev\x18\x04 \x01(\tR\x06stdDev\x12\x10\n" +
 	"\x03min\x18\x05 \x01(\x01R\x03min\x12\x10\n" +
 	"\x03max\x18\x06 \x01(\x01R\x03max\x12A\n" +
-	"\tmodifiers\x18\a \x03(\v2#.simulation.v1.DistributionModifierR\tmodifiers\"\x94\x01\n" +
+	"\tmodifiers\x18\a \x03(\v2#.simulation.v1.DistributionModifierR\tmodifiers\x12\x1c\n" +
+	"\ttimeframe\x18\b \x01(\tR\ttimeframe\"\x94\x01\n" +
 	"\vFatigueRule\x12)\n" +
 	"\x10lockout_duration\x18\x01 \x01(\tR\x0flockoutDuration\x12+\n" +
 	"\x11recovery_duration\x18\x02 \x01(\tR\x10recoveryDuration\x12-\n" +
@@ -1197,12 +1258,15 @@ const file_src_lib_simulation_proto_rawDesc = "" +
 	"\x04type\x18\x01 \x01(\x0e2\x1a.simulation.v1.ProfileTypeR\x04type\x12\x1b\n" +
 	"\tmax_watts\x18\x02 \x01(\x01R\bmaxWatts\x12#\n" +
 	"\rstandby_watts\x18\x03 \x01(\x01R\fstandbyWatts\x12+\n" +
-	"\x11cooldown_duration\x18\x04 \x01(\tR\x10cooldownDuration\"\xbf\x02\n" +
+	"\x11cooldown_duration\x18\x04 \x01(\tR\x10cooldownDuration\"7\n" +
+	"\x0eThermalProfile\x12%\n" +
+	"\x0eradiated_watts\x18\x01 \x01(\x01R\rradiatedWatts\"\x87\x03\n" +
 	"\x0eDeviceTemplate\x12\x1b\n" +
 	"\tdevice_id\x18\x01 \x01(\tR\bdeviceId\x129\n" +
 	"\btaxonomy\x18\x02 \x01(\v2\x1d.simulation.v1.DeviceTaxonomyR\btaxonomy\x12J\n" +
 	"\tspecifics\x18\x03 \x03(\v2,.simulation.v1.DeviceTemplate.SpecificsEntryR\tspecifics\x12K\n" +
-	"\x12electrical_profile\x18\x04 \x01(\v2\x1c.simulation.v1.DeviceProfileR\x11electricalProfile\x1a<\n" +
+	"\x12electrical_profile\x18\x04 \x01(\v2\x1c.simulation.v1.DeviceProfileR\x11electricalProfile\x12F\n" +
+	"\x0fthermal_profile\x18\x05 \x01(\v2\x1d.simulation.v1.ThermalProfileR\x0ethermalProfile\x1a<\n" +
 	"\x0eSpecificsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8d\x02\n" +
@@ -1288,7 +1352,7 @@ func file_src_lib_simulation_proto_rawDescGZIP() []byte {
 }
 
 var file_src_lib_simulation_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_src_lib_simulation_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_src_lib_simulation_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_src_lib_simulation_proto_goTypes = []any{
 	(DistributionType)(0),           // 0: simulation.v1.DistributionType
 	(ConditionOperator)(0),          // 1: simulation.v1.ConditionOperator
@@ -1302,14 +1366,15 @@ var file_src_lib_simulation_proto_goTypes = []any{
 	(*FatigueRule)(nil),             // 9: simulation.v1.FatigueRule
 	(*DeviceTaxonomy)(nil),          // 10: simulation.v1.DeviceTaxonomy
 	(*DeviceProfile)(nil),           // 11: simulation.v1.DeviceProfile
-	(*DeviceTemplate)(nil),          // 12: simulation.v1.DeviceTemplate
-	(*Trigger)(nil),                 // 13: simulation.v1.Trigger
-	(*ScenarioAction)(nil),          // 14: simulation.v1.ScenarioAction
-	(*ScenarioTemplate)(nil),        // 15: simulation.v1.ScenarioTemplate
-	(*ActorTemplate)(nil),           // 16: simulation.v1.ActorTemplate
-	(*NodeArchetype)(nil),           // 17: simulation.v1.NodeArchetype
-	nil,                             // 18: simulation.v1.DeviceTemplate.SpecificsEntry
-	nil,                             // 19: simulation.v1.ScenarioAction.ParametersEntry
+	(*ThermalProfile)(nil),          // 12: simulation.v1.ThermalProfile
+	(*DeviceTemplate)(nil),          // 13: simulation.v1.DeviceTemplate
+	(*Trigger)(nil),                 // 14: simulation.v1.Trigger
+	(*ScenarioAction)(nil),          // 15: simulation.v1.ScenarioAction
+	(*ScenarioTemplate)(nil),        // 16: simulation.v1.ScenarioTemplate
+	(*ActorTemplate)(nil),           // 17: simulation.v1.ActorTemplate
+	(*NodeArchetype)(nil),           // 18: simulation.v1.NodeArchetype
+	nil,                             // 19: simulation.v1.DeviceTemplate.SpecificsEntry
+	nil,                             // 20: simulation.v1.ScenarioAction.ParametersEntry
 }
 var file_src_lib_simulation_proto_depIdxs = []int32{
 	1,  // 0: simulation.v1.EngineCondition.operator:type_name -> simulation.v1.ConditionOperator
@@ -1319,25 +1384,26 @@ var file_src_lib_simulation_proto_depIdxs = []int32{
 	2,  // 4: simulation.v1.DeviceTaxonomy.category:type_name -> simulation.v1.DeviceCategory
 	3,  // 5: simulation.v1.DeviceProfile.type:type_name -> simulation.v1.ProfileType
 	10, // 6: simulation.v1.DeviceTemplate.taxonomy:type_name -> simulation.v1.DeviceTaxonomy
-	18, // 7: simulation.v1.DeviceTemplate.specifics:type_name -> simulation.v1.DeviceTemplate.SpecificsEntry
+	19, // 7: simulation.v1.DeviceTemplate.specifics:type_name -> simulation.v1.DeviceTemplate.SpecificsEntry
 	11, // 8: simulation.v1.DeviceTemplate.electrical_profile:type_name -> simulation.v1.DeviceProfile
-	4,  // 9: simulation.v1.Trigger.type:type_name -> simulation.v1.TriggerType
-	8,  // 10: simulation.v1.Trigger.distribution:type_name -> simulation.v1.ProbabilityDistribution
-	6,  // 11: simulation.v1.Trigger.base_conditions:type_name -> simulation.v1.EngineCondition
-	9,  // 12: simulation.v1.Trigger.fatigue_rule:type_name -> simulation.v1.FatigueRule
-	5,  // 13: simulation.v1.ScenarioAction.state:type_name -> simulation.v1.DeviceState
-	19, // 14: simulation.v1.ScenarioAction.parameters:type_name -> simulation.v1.ScenarioAction.ParametersEntry
-	13, // 15: simulation.v1.ScenarioTemplate.trigger:type_name -> simulation.v1.Trigger
-	14, // 16: simulation.v1.ScenarioTemplate.actions:type_name -> simulation.v1.ScenarioAction
-	16, // 17: simulation.v1.NodeArchetype.actors:type_name -> simulation.v1.ActorTemplate
-	12, // 18: simulation.v1.NodeArchetype.devices:type_name -> simulation.v1.DeviceTemplate
-	15, // 19: simulation.v1.NodeArchetype.scenarios:type_name -> simulation.v1.ScenarioTemplate
-	8,  // 20: simulation.v1.ScenarioAction.ParametersEntry.value:type_name -> simulation.v1.ProbabilityDistribution
-	21, // [21:21] is the sub-list for method output_type
-	21, // [21:21] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	12, // 9: simulation.v1.DeviceTemplate.thermal_profile:type_name -> simulation.v1.ThermalProfile
+	4,  // 10: simulation.v1.Trigger.type:type_name -> simulation.v1.TriggerType
+	8,  // 11: simulation.v1.Trigger.distribution:type_name -> simulation.v1.ProbabilityDistribution
+	6,  // 12: simulation.v1.Trigger.base_conditions:type_name -> simulation.v1.EngineCondition
+	9,  // 13: simulation.v1.Trigger.fatigue_rule:type_name -> simulation.v1.FatigueRule
+	5,  // 14: simulation.v1.ScenarioAction.state:type_name -> simulation.v1.DeviceState
+	20, // 15: simulation.v1.ScenarioAction.parameters:type_name -> simulation.v1.ScenarioAction.ParametersEntry
+	14, // 16: simulation.v1.ScenarioTemplate.trigger:type_name -> simulation.v1.Trigger
+	15, // 17: simulation.v1.ScenarioTemplate.actions:type_name -> simulation.v1.ScenarioAction
+	17, // 18: simulation.v1.NodeArchetype.actors:type_name -> simulation.v1.ActorTemplate
+	13, // 19: simulation.v1.NodeArchetype.devices:type_name -> simulation.v1.DeviceTemplate
+	16, // 20: simulation.v1.NodeArchetype.scenarios:type_name -> simulation.v1.ScenarioTemplate
+	8,  // 21: simulation.v1.ScenarioAction.ParametersEntry.value:type_name -> simulation.v1.ProbabilityDistribution
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_src_lib_simulation_proto_init() }
@@ -1351,7 +1417,7 @@ func file_src_lib_simulation_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_src_lib_simulation_proto_rawDesc), len(file_src_lib_simulation_proto_rawDesc)),
 			NumEnums:      6,
-			NumMessages:   14,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

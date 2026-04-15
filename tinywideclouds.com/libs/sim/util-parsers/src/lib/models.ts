@@ -14,6 +14,7 @@ export interface PowerUsageRow {
   timestamp: Temporal.Instant;
   totalWatts: number;
   indoorTempC: number;
+  outdoorTempC: number;
   tankTempC: number;
   activeDevices: string[];
 }

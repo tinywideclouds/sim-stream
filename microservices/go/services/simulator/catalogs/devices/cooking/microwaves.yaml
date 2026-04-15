@@ -1,9 +1,8 @@
-# catalogs/devices/cooking/microwaves.yaml
 devices:
   - id: "microwave_budget"
     tags: ["cooking_low_load", "microwave"]
     template:
-      taxonomy: { category: 1 }
+      taxonomy: { category: 1, class_name: "microwave" }
       electrical_profile: 
         type: 1
         max_watts: 800.0
@@ -12,7 +11,7 @@ devices:
   - id: "microwave_high_power"
     tags: ["cooking_low_load", "microwave"]
     template:
-      taxonomy: { category: 1 }
+      taxonomy: { category: 1, class_name: "microwave" }
       electrical_profile: 
         type: 1
         max_watts: 1200.0

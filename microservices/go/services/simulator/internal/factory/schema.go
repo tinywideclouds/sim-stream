@@ -1,7 +1,7 @@
-// internal/factory/schema.go
 package factory
 
 import (
+	"github.com/tinywideclouds/go-maths/pkg/probability"
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
@@ -18,13 +18,13 @@ type CatalogAction struct {
 }
 
 type CatalogPersona struct {
-	ID             string                                    `yaml:"id"`
-	Type           string                                    `yaml:"type"`
-	Traits         []string                                  `yaml:"traits"`
-	Frequency      int                                       `yaml:"frequency"`       // NEW: Pool weighting for procedural generation
-	StartingMeters map[string]domain.ProbabilityDistribution `yaml:"starting_meters"` // UPDATED: Gaussian bounds
-	Biology        map[string]domain.BiologyConfig           `yaml:"biology"`         // NEW: Biological decay template
-	Phases         []domain.Phase                            `yaml:"phases"`
+	ID             string                             `yaml:"id"`
+	Type           string                             `yaml:"type"`
+	Traits         []string                           `yaml:"traits"`
+	Frequency      int                                `yaml:"frequency"`
+	StartingMeters map[string]probability.SampleSpace `yaml:"starting_meters"` // Powered by go-maths
+	Biology        map[string]domain.BiologyConfig    `yaml:"biology"`
+	Phases         []domain.Phase                     `yaml:"phases"`
 }
 
 type CatalogSystem struct {
@@ -32,7 +32,6 @@ type CatalogSystem struct {
 	Scenarios []domain.ScenarioTemplate `yaml:"scenarios"`
 }
 
-// UPDATED: Added filtering prefixes
 type PersonaRequirement struct {
 	Type            string   `yaml:"type"`
 	Min             int      `yaml:"min"`
@@ -83,10 +82,9 @@ type CatalogEvent struct {
 	Template  CatalogEventTemplate `yaml:"template"`
 }
 
-// UPDATED: Added Frequency
 type CatalogComposition struct {
 	ID                     string               `yaml:"id"`
-	Frequency              int                  `yaml:"frequency"` // Weight for random selection
+	Frequency              int                  `yaml:"frequency"`
 	Description            string               `yaml:"description"`
 	PersonaRequirements    []PersonaRequirement `yaml:"persona_requirements"`
 	RequiredDeviceTags     []string             `yaml:"required_device_tags"`

@@ -1,4 +1,3 @@
-// domain/archetype.go
 package domain
 
 // GridTemplate defines the regional physics of the local power grid.
@@ -37,10 +36,13 @@ type NodeArchetype struct {
 
 	// Routine Blueprints (The Rails)
 	RoutineTemplates []RoutineTemplate `yaml:"routine_templates"`
+	Alarms           []AlarmTemplate   `yaml:"alarms"`
 	CollectiveEvents []CollectiveEvent `yaml:"collective_events"`
 
 	// Utility Blueprints (The Rubber Bands)
 	Meters  []MeterTemplate  `yaml:"meters"`
 	Actions []ActionTemplate `yaml:"actions"`
-	Alarms  []AlarmTemplate  `yaml:"alarms"`
+
+	// Overrides
+	CalendarEvents []CalendarEvent `yaml:"calendar_events"`
 }

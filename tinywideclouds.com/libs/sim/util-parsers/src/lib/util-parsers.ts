@@ -23,7 +23,7 @@ export function parsePowerUsageCsv(csvRaw: string): PowerUsageRow[] {
   if (lines.length < 2) return [];
 
   return lines.slice(1).map((line) => {
-    const [householdId, timestamp, totalWatts, indoorTempC, tankTempC, activeDevices] = line.split(',');
+    const [householdId, timestamp, totalWatts, indoorTempC, outdoorTempC, tankTempC, activeDevices] = line.split(',');
     
     const rawDevices = activeDevices ? activeDevices.trim() : '';
     const devices = rawDevices && rawDevices !== '-' ? rawDevices.split('|') : [];
@@ -33,6 +33,7 @@ export function parsePowerUsageCsv(csvRaw: string): PowerUsageRow[] {
       timestamp: Temporal.Instant.from(timestamp.trim()),
       totalWatts: parseFloat(totalWatts),
       indoorTempC: parseFloat(indoorTempC),
+      outdoorTempC: parseFloat(outdoorTempC),
       tankTempC: parseFloat(tankTempC),
       activeDevices: devices,
     };

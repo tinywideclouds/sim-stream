@@ -1,36 +1,25 @@
-# catalogs/actions/leisure/digital_leisure.yaml
 actions:
   - id: "watch_tv"
     requires_device_tag: "television"
     template:
       action_id: "watch_tv"
       interruptible: true
-      initiation_friction: 0.0 # The path of least resistance for a tired human
+      initiation_friction: 0.0
       satisfies:
-        leisure:
-          amount: 40.0
-          curve: "linear"
-      duration: 
-        type: 1
-        mean: "1h30m"
-        std_dev: "30m"
+        leisure: { amount: 40.0, curve: "linear" }
+      duration: { type: "normal", mean: "1h30m", std_dev: "30m" }
 
   - id: "play_pc_games"
     requires_device_tag: "gaming_pc"
     template:
       action_id: "play_pc_games"
       interruptible: true
-      initiation_friction: 5.0 # Takes a tiny bit of effort to sit at the desk
+      initiation_friction: 5.0
       satisfies:
-        leisure:
-          amount: 60.0
-          curve: "linear"
+        leisure: { amount: 60.0, curve: "linear" }
       costs:
-        energy: 10.0 # Gaming drains energy faster than passive TV
-      duration: 
-        type: 1
-        mean: "2h"
-        std_dev: "45m"
+        energy: 10.0
+      duration: { type: "normal", mean: "2h", std_dev: "45m" }
 
   - id: "browse_internet"
     requires_device_tag: "computer"
@@ -39,10 +28,5 @@ actions:
       interruptible: true
       initiation_friction: 2.0
       satisfies:
-        leisure:
-          amount: 25.0
-          curve: "front_loaded" # Good for short bursts
-      duration: 
-        type: 1
-        mean: "45m"
-        std_dev: "15m"
+        leisure: { amount: 25.0, curve: "ease_out" }
+      duration: { type: "normal", mean: "45m", std_dev: "15m" }

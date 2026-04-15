@@ -1,117 +1,108 @@
-# catalogs/personas/office_workers.yaml
 personas:
   - id: "office_standard_9to5"
     type: "adult"
     traits: ["disciplined"]
     frequency: 50
     starting_meters: 
-      energy: { mean: 80.0, variance: 5.0 }
-      hunger: { mean: 60.0, variance: 10.0 }
-      hygiene: { mean: 50.0, variance: 5.0 }
-      leisure: { mean: 50.0, variance: 10.0 }
+      energy: { type: "normal", mean: "80.0", std_dev: "5.0" }
+      hunger: { type: "normal", mean: "60.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "50.0", std_dev: "5.0" }
+      leisure: { type: "normal", mean: "50.0", std_dev: "10.0" }
     biology:
       energy:
         decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
-        phase_multipliers:
-          sleep: -10.0 # Deep sleep recovery
+        phase_multipliers: { sleep: -10.0 }
       hunger:
-        decay_per_hour: { mean: 5.0, variance: 0.8 }
-        phase_multipliers:
-          sleep: 0.1   # Barely gets hungry while sleeping
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.8" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
-        decay_per_hour: { mean: 4.0, variance: 1.0 }
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "1.0" }
     phases:
       - phase_id: "night_sleep"
         type: "sleep"
         anchor_time: "23:00"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "7h30m"
-          flexibility: "2h"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h30m", std_dev: "45m" }
       - phase_id: "work_shift"
         type: "away" 
         anchor_time: "08:30"
         gravity: 0.9
-        duration: 
-          type: 1 
-          mean: "9h"
-          std_dev: "10m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects: 
-            hygiene: { amount: -15.0, over: "9h", curve: "linear" }
-            leisure: { amount: -20.0, over: "9h", curve: "linear" }
+        blocks:
+          - block_id: "office"
+            probability: 1.0
+            duration: { type: "normal", mean: "9h", std_dev: "20m" }
+            modifiers:
+              hygiene: { amount: -15.0, over: "9h", curve: "linear" }
+              leisure: { amount: -20.0, over: "9h", curve: "linear" }
+              energy: { amount: -40.0, over: "9h", curve: "linear" }
+              hunger: { amount: -45.0, over: "9h", curve: "linear" }
 
   - id: "office_long_commute"
     type: "adult"
     traits: ["anxious"]
     frequency: 15
     starting_meters: 
-      energy: { mean: 70.0, variance: 8.0 }
-      hunger: { mean: 50.0, variance: 5.0 }
-      hygiene: { mean: 50.0, variance: 5.0 }
-      leisure: { mean: 40.0, variance: 5.0 }
+      energy: { type: "normal", mean: "70.0", std_dev: "8.0" }
+      hunger: { type: "normal", mean: "50.0", std_dev: "5.0" }
+      hygiene: { type: "normal", mean: "50.0", std_dev: "5.0" }
+      leisure: { type: "normal", mean: "40.0", std_dev: "5.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 4.5, variance: 0.5 } # Commute is tiring
-        phase_multipliers:
-          sleep: -9.0
+        decay_per_hour: { type: "normal", mean: "4.5", std_dev: "0.5" }
+        phase_multipliers: { sleep: -9.0 }
       hunger:
-        decay_per_hour: { mean: 5.0, variance: 0.5 }
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.5" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.5, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.5", std_dev: "0.2" }
       leisure:
-        decay_per_hour: { mean: 4.5, variance: 1.0 }
+        decay_per_hour: { type: "normal", mean: "4.5", std_dev: "1.0" }
     phases:
       - phase_id: "early_sleep"
         type: "sleep"
         anchor_time: "22:00"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "7h"
-          flexibility: "2h"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "1h" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:00"
         gravity: 0.95
-        duration: 
-          type: 1 
-          mean: "11h"
-          std_dev: "30m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects: 
-            hygiene: { amount: -25.0, over: "11h", curve: "linear" }
-            leisure: { amount: -40.0, over: "11h", curve: "linear" }
+        blocks:
+          - block_id: "long_shift"
+            probability: 1.0
+            duration: { type: "normal", mean: "11h", std_dev: "30m" }
+            modifiers:
+              hygiene: { amount: -25.0, over: "11h", curve: "linear" }
+              leisure: { amount: -40.0, over: "11h", curve: "linear" }
+              energy: { amount: -55.0, over: "11h", curve: "linear" }
+              hunger: { amount: -50.0, over: "11h", curve: "linear" }
 
   - id: "office_night_shift"
     type: "adult"
     traits: ["disciplined"]
     frequency: 10
     starting_meters: 
-      energy: { mean: 40.0, variance: 10.0 }
-      hunger: { mean: 40.0, variance: 10.0 }
-      hygiene: { mean: 40.0, variance: 10.0 }
-      leisure: { mean: 60.0, variance: 10.0 }
+      energy: { type: "normal", mean: "40.0", std_dev: "10.0" }
+      hunger: { type: "normal", mean: "40.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "40.0", std_dev: "10.0" }
+      leisure: { type: "normal", mean: "60.0", std_dev: "10.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 4.2, variance: 0.4 }
-        phase_multipliers:
-          sleep: -8.0 # Poorer quality day sleep
+        decay_per_hour: { type: "normal", mean: "4.2", std_dev: "0.4" }
+        phase_multipliers: { sleep: -8.0 }
       hunger:
-        decay_per_hour: { mean: 5.5, variance: 0.5 }
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "5.5", std_dev: "0.5" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
         decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
     phases:
@@ -119,230 +110,220 @@ personas:
         type: "sleep"
         anchor_time: "08:00"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "8h"
-          flexibility: "2h"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "8h", std_dev: "1h" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "21:30"
         gravity: 0.9
-        duration:
-          type: 1
-          mean: "9h"
-          std_dev: "15m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -20.0, over: "9h", curve: "linear" }
-            leisure: { amount: -20.0, over: "9h", curve: "linear" }
+        blocks:
+          - block_id: "night_shift"
+            probability: 1.0
+            duration: { type: "normal", mean: "9h", std_dev: "15m" }
+            modifiers:
+              hygiene: { amount: -20.0, over: "9h", curve: "linear" }
+              leisure: { amount: -20.0, over: "9h", curve: "linear" }
+              energy: { amount: -45.0, over: "9h", curve: "linear" }
+              hunger: { amount: -40.0, over: "9h", curve: "linear" }
 
   - id: "office_gym_goer"
     type: "adult"
     traits: ["disciplined"]
     frequency: 20
     starting_meters: 
-      energy: { mean: 90.0, variance: 5.0 }
-      hunger: { mean: 70.0, variance: 5.0 }
-      hygiene: { mean: 80.0, variance: 5.0 }
-      leisure: { mean: 50.0, variance: 10.0 }
+      energy: { type: "normal", mean: "90.0", std_dev: "5.0" }
+      hunger: { type: "normal", mean: "70.0", std_dev: "5.0" }
+      hygiene: { type: "normal", mean: "80.0", std_dev: "5.0" }
+      leisure: { type: "normal", mean: "50.0", std_dev: "10.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 3.5, variance: 0.3 } # Fit, high stamina
-        phase_multipliers:
-          sleep: -11.0 # Excellent recovery
+        decay_per_hour: { type: "normal", mean: "3.5", std_dev: "0.3" }
+        phase_multipliers: { sleep: -11.0 }
       hunger:
-        decay_per_hour: { mean: 6.5, variance: 0.8 } # High metabolism
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "6.5", std_dev: "0.8" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 3.0, variance: 0.5 }
+        decay_per_hour: { type: "normal", mean: "3.0", std_dev: "0.5" }
       leisure:
-        decay_per_hour: { mean: 3.5, variance: 0.5 }
+        decay_per_hour: { type: "normal", mean: "3.5", std_dev: "0.5" }
     phases:
       - phase_id: "strict_sleep"
         type: "sleep"
         anchor_time: "22:30"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "8h"
-          flexibility: "2h"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "8h", std_dev: "30m" }
       - phase_id: "work_shift_and_gym"
         type: "away"
         anchor_time: "08:00"
         gravity: 0.9
-        duration:
-          type: 1
-          mean: "10h30m"
-          std_dev: "20m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -80.0, over: "10h30m", curve: "linear" } # Very dirty after gym
-            leisure: { amount: 10.0, over: "10h30m", curve: "linear" }
+        blocks:
+          - block_id: "office_and_gym"
+            probability: 1.0
+            duration: { type: "normal", mean: "10h30m", std_dev: "20m" }
+            modifiers:
+              hygiene: { amount: -80.0, over: "10h30m", curve: "linear" }
+              leisure: { amount: 10.0, over: "10h30m", curve: "linear" }
+              energy: { amount: -60.0, over: "10h30m", curve: "linear" }
+              hunger: { amount: -70.0, over: "10h30m", curve: "linear" }
 
   - id: "office_socialite"
     type: "adult"
     traits: ["chaotic"]
     frequency: 15
     starting_meters: 
-      energy: { mean: 75.0, variance: 10.0 }
-      hunger: { mean: 60.0, variance: 10.0 }
-      hygiene: { mean: 60.0, variance: 10.0 }
-      leisure: { mean: 80.0, variance: 10.0 }
+      energy: { type: "normal", mean: "75.0", std_dev: "10.0" }
+      hunger: { type: "normal", mean: "60.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "60.0", std_dev: "10.0" }
+      leisure: { type: "normal", mean: "80.0", std_dev: "10.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 4.5, variance: 0.8 }
-        phase_multipliers:
-          sleep: -9.0
+        decay_per_hour: { type: "normal", mean: "4.5", std_dev: "0.8" }
+        phase_multipliers: { sleep: -9.0 }
       hunger:
-        decay_per_hour: { mean: 4.5, variance: 1.0 }
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "4.5", std_dev: "1.0" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
-        decay_per_hour: { mean: 6.0, variance: 1.5 } # Gets bored quickly
+        decay_per_hour: { type: "normal", mean: "6.0", std_dev: "1.5" }
     phases:
       - phase_id: "late_sleep"
         type: "sleep"
         anchor_time: "00:30"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "6h30m"
-          flexibility: "3h"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "6h30m", std_dev: "1h" }
       - phase_id: "work_and_drinks"
         type: "away"
         anchor_time: "09:00"
         gravity: 0.7
-        duration:
-          type: 1
-          mean: "11h"
-          std_dev: "60m"
-          flexibility: "1h"
-        modifiers:
-          application: "block_end"
-          effects:
-            hunger: { amount: 10.0, over: "11h", curve: "linear" } # Eats pub snacks
-            hygiene: { amount: -20.0, over: "11h", curve: "linear" }
-            leisure: { amount: 50.0, over: "11h", curve: "linear" }
+        blocks:
+          - block_id: "office"
+            probability: 1.0
+            duration: { type: "normal", mean: "9h", std_dev: "15m" }
+            modifiers:
+              hunger: { amount: -40.0, over: "9h", curve: "linear" }
+              hygiene: { amount: -15.0, over: "9h", curve: "linear" }
+              energy: { amount: -35.0, over: "9h", curve: "linear" }
+          - block_id: "drinks"
+            probability: 0.6 # The magic of probabilistic sub-blocks!
+            duration: { type: "normal", mean: "2h", std_dev: "45m" }
+            modifiers:
+              hunger: { amount: 30.0, over: "2h", curve: "linear" }
+              leisure: { amount: 50.0, over: "2h", curve: "linear" }
+              energy: { amount: -10.0, over: "2h", curve: "linear" }
 
   - id: "office_executive"
     type: "adult"
     traits: ["anxious", "disciplined"]
     frequency: 10
     starting_meters: 
-      energy: { mean: 60.0, variance: 5.0 }
-      hunger: { mean: 50.0, variance: 5.0 }
-      hygiene: { mean: 70.0, variance: 5.0 }
-      leisure: { mean: 30.0, variance: 5.0 }
+      energy: { type: "normal", mean: "60.0", std_dev: "5.0" }
+      hunger: { type: "normal", mean: "50.0", std_dev: "5.0" }
+      hygiene: { type: "normal", mean: "70.0", std_dev: "5.0" }
+      leisure: { type: "normal", mean: "30.0", std_dev: "5.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 5.0, variance: 0.3 } # High stress
-        phase_multipliers:
-          sleep: -8.0
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.3" }
+        phase_multipliers: { sleep: -8.0 }
       hunger:
-        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" } # Skips meals
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
-        decay_per_hour: { mean: 3.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "3.0", std_dev: "0.2" }
     phases:
       - phase_id: "short_sleep"
         type: "sleep"
         anchor_time: "23:30"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "6h"
-          flexibility: "1h30m"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "6h", std_dev: "30m" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "07:30"
         gravity: 0.95
-        duration:
-          type: 1
-          mean: "10h"
-          std_dev: "15m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -20.0, over: "10h", curve: "linear" }
-            leisure: { amount: -50.0, over: "10h", curve: "linear" }
+        blocks:
+          - block_id: "office"
+            probability: 1.0
+            duration: { type: "normal", mean: "10h", std_dev: "15m" }
+            modifiers:
+              hygiene: { amount: -20.0, over: "10h", curve: "linear" }
+              leisure: { amount: -50.0, over: "10h", curve: "linear" }
+              energy: { amount: -50.0, over: "10h", curve: "linear" }
+              hunger: { amount: -40.0, over: "10h", curve: "linear" }
 
   - id: "office_part_timer_morning"
     type: "adult"
     traits: ["lazy"]
     frequency: 15
     starting_meters: 
-      energy: { mean: 85.0, variance: 10.0 }
-      hunger: { mean: 70.0, variance: 10.0 }
-      hygiene: { mean: 60.0, variance: 10.0 }
-      leisure: { mean: 60.0, variance: 10.0 }
+      energy: { type: "normal", mean: "85.0", std_dev: "10.0" }
+      hunger: { type: "normal", mean: "70.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "60.0", std_dev: "10.0" }
+      leisure: { type: "normal", mean: "60.0", std_dev: "10.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 3.8, variance: 0.4 }
-        phase_multipliers:
-          sleep: -10.0
+        decay_per_hour: { type: "normal", mean: "3.8", std_dev: "0.4" }
+        phase_multipliers: { sleep: -10.0 }
       hunger:
-        decay_per_hour: { mean: 5.0, variance: 0.6 }
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.6" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
-        decay_per_hour: { mean: 4.5, variance: 0.5 }
+        decay_per_hour: { type: "normal", mean: "4.5", std_dev: "0.5" }
     phases:
       - phase_id: "long_sleep"
         type: "sleep"
         anchor_time: "23:00"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "8h30m"
-          flexibility: "2h30m"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "8h30m", std_dev: "1h" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:00"
         gravity: 0.8
-        duration:
-          type: 1
-          mean: "4h"
-          std_dev: "10m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -10.0, over: "4h", curve: "linear" }
-            leisure: { amount: -10.0, over: "4h", curve: "linear" }
+        blocks:
+          - block_id: "office"
+            probability: 1.0
+            duration: { type: "normal", mean: "4h", std_dev: "15m" }
+            modifiers:
+              hygiene: { amount: -10.0, over: "4h", curve: "linear" }
+              leisure: { amount: -10.0, over: "4h", curve: "linear" }
+              energy: { amount: -15.0, over: "4h", curve: "linear" }
+              hunger: { amount: -20.0, over: "4h", curve: "linear" }
 
   - id: "office_part_timer_afternoon"
     type: "adult"
     traits: ["chaotic"]
     frequency: 15
     starting_meters: 
-      energy: { mean: 80.0, variance: 10.0 }
-      hunger: { mean: 60.0, variance: 10.0 }
-      hygiene: { mean: 50.0, variance: 10.0 }
-      leisure: { mean: 70.0, variance: 10.0 }
+      energy: { type: "normal", mean: "80.0", std_dev: "10.0" }
+      hunger: { type: "normal", mean: "60.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "50.0", std_dev: "10.0" }
+      leisure: { type: "normal", mean: "70.0", std_dev: "10.0" }
     biology:
       energy:
         decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
-        phase_multipliers:
-          sleep: -10.0
+        phase_multipliers: { sleep: -10.0 }
       hunger:
-        decay_per_hour: { mean: 5.0, variance: 0.8 }
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.8" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
         decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
     phases:
@@ -350,91 +331,85 @@ personas:
         type: "sleep"
         anchor_time: "00:00"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "8h"
-          flexibility: "2h"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "8h", std_dev: "1h" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "13:00"
         gravity: 0.8
-        duration:
-          type: 1
-          mean: "5h"
-          std_dev: "10m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -10.0, over: "5h", curve: "linear" }
-            leisure: { amount: -15.0, over: "5h", curve: "linear" }
+        blocks:
+          - block_id: "office"
+            probability: 1.0
+            duration: { type: "normal", mean: "5h", std_dev: "15m" }
+            modifiers:
+              hygiene: { amount: -10.0, over: "5h", curve: "linear" }
+              leisure: { amount: -15.0, over: "5h", curve: "linear" }
+              energy: { amount: -20.0, over: "5h", curve: "linear" }
+              hunger: { amount: -25.0, over: "5h", curve: "linear" }
 
   - id: "office_slacker"
     type: "adult"
     traits: ["lazy", "chaotic"]
     frequency: 10
     starting_meters: 
-      energy: { mean: 90.0, variance: 10.0 }
-      hunger: { mean: 60.0, variance: 10.0 }
-      hygiene: { mean: 50.0, variance: 10.0 }
-      leisure: { mean: 40.0, variance: 10.0 }
+      energy: { type: "normal", mean: "90.0", std_dev: "10.0" }
+      hunger: { type: "normal", mean: "60.0", std_dev: "10.0" }
+      hygiene: { type: "normal", mean: "50.0", std_dev: "10.0" }
+      leisure: { type: "normal", mean: "40.0", std_dev: "10.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 3.5, variance: 0.5 } # Barely expends energy
-        phase_multipliers:
-          sleep: -10.0
+        decay_per_hour: { type: "normal", mean: "3.5", std_dev: "0.5" }
+        phase_multipliers: { sleep: -10.0 }
       hunger:
-        decay_per_hour: { mean: 5.0, variance: 1.0 }
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "1.0" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
-        decay_per_hour: { mean: 6.5, variance: 1.0 } # Needs constant entertainment
+        decay_per_hour: { type: "normal", mean: "6.5", std_dev: "1.0" }
     phases:
       - phase_id: "late_sleep"
         type: "sleep"
         anchor_time: "01:00"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "7h"
-          flexibility: "2h30m"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "1h" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "09:30"
         gravity: 0.7
-        duration:
-          type: 1
-          mean: "7h"
-          std_dev: "45m"
-          flexibility: "1h"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -10.0, over: "7h", curve: "linear" }
-            leisure: { amount: 10.0, over: "7h", curve: "linear" } # Actually gains leisure slacking off at work
+        blocks:
+          - block_id: "office"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "30m" }
+            modifiers:
+              hygiene: { amount: -10.0, over: "7h", curve: "linear" }
+              leisure: { amount: 10.0, over: "7h", curve: "linear" }
+              energy: { amount: -20.0, over: "7h", curve: "linear" }
+              hunger: { amount: -35.0, over: "7h", curve: "linear" }
 
   - id: "office_early_bird"
     type: "adult"
     traits: ["disciplined"]
     frequency: 20
     starting_meters: 
-      energy: { mean: 100.0, variance: 2.0 }
-      hunger: { mean: 80.0, variance: 5.0 }
-      hygiene: { mean: 60.0, variance: 5.0 }
-      leisure: { mean: 50.0, variance: 5.0 }
+      energy: { type: "normal", mean: "100.0", std_dev: "2.0" }
+      hunger: { type: "normal", mean: "80.0", std_dev: "5.0" }
+      hygiene: { type: "normal", mean: "60.0", std_dev: "5.0" }
+      leisure: { type: "normal", mean: "50.0", std_dev: "5.0" }
     biology:
       energy:
-        decay_per_hour: { mean: 4.5, variance: 0.2 }
-        phase_multipliers:
-          sleep: -12.0 # Efficient sleeper
+        decay_per_hour: { type: "normal", mean: "4.5", std_dev: "0.2" }
+        phase_multipliers: { sleep: -12.0 }
       hunger:
-        decay_per_hour: { mean: 5.0, variance: 0.5 }
-        phase_multipliers:
-          sleep: 0.1
+        decay_per_hour: { type: "normal", mean: "5.0", std_dev: "0.5" }
+        phase_multipliers: { sleep: 0.1 }
       hygiene:
-        decay_per_hour: { mean: 2.0, variance: 0.2 }
+        decay_per_hour: { type: "normal", mean: "2.0", std_dev: "0.2" }
       leisure:
         decay_per_hour: { type: "normal", mean: "4.0", std_dev: "0.5" }
     phases:
@@ -442,21 +417,20 @@ personas:
         type: "sleep"
         anchor_time: "21:30"
         gravity: 0.2
-        duration:
-          type: 3
-          value: "7h"
-          flexibility: "1h30m"
+        blocks:
+          - block_id: "core_sleep"
+            probability: 1.0
+            duration: { type: "normal", mean: "7h", std_dev: "30m" }
       - phase_id: "work_shift"
         type: "away"
         anchor_time: "06:00"
         gravity: 0.95
-        duration:
-          type: 1
-          mean: "8h30m"
-          std_dev: "10m"
-          flexibility: "30m"
-        modifiers:
-          application: "block_end"
-          effects:
-            hygiene: { amount: -15.0, over: "8h30m", curve: "linear" }
-            leisure: { amount: -20.0, over: "8h30m", curve: "linear" }
+        blocks:
+          - block_id: "office"
+            probability: 1.0
+            duration: { type: "normal", mean: "8h30m", std_dev: "15m" }
+            modifiers:
+              hygiene: { amount: -15.0, over: "8h30m", curve: "linear" }
+              leisure: { amount: -20.0, over: "8h30m", curve: "linear" }
+              energy: { amount: -35.0, over: "8h30m", curve: "linear" }
+              hunger: { amount: -40.0, over: "8h30m", curve: "linear" }

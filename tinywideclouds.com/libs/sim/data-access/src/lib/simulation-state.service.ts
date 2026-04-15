@@ -18,6 +18,7 @@ export interface AggregatedPowerBucket {
   maxWatts: number;
   avgWatts: number;
   indoorTempC: number;
+  outdoorTempC: number;
   tankTempC: number;
 }
 
@@ -81,7 +82,7 @@ export class SimulationStateService {
       return filtered.map(r => ({
         timestamp: r.timestamp,
         minWatts: r.totalWatts, maxWatts: r.totalWatts, avgWatts: r.totalWatts,
-        indoorTempC: r.indoorTempC, tankTempC: r.tankTempC
+        indoorTempC: r.indoorTempC, outdoorTempC: r.outdoorTempC, tankTempC: r.tankTempC
       }));
     }
 
@@ -97,20 +98,24 @@ export class SimulationStateService {
 
     for (const key of sortedKeys) {
       const rows = buckets.get(key)!;
-      let min = Infinity, max = -Infinity, sum = 0, tempSum = 0, tankSum = 0;
+      let min = Infinity, max = -Infinity, sum = 0, indoorTempSum = 0,  outdoorTempSum = 0, tankSum = 0;
 
       for (const r of rows) {
         if (r.totalWatts < min) min = r.totalWatts;
         if (r.totalWatts > max) max = r.totalWatts;
         sum += r.totalWatts;
-        tempSum += r.indoorTempC;
+        indoorTempSum += r.indoorTempC;
+        outdoorTempSum += r.outdoorTempC;
         tankSum += r.tankTempC;
       }
 
       aggregated.push({
         timestamp: Temporal.Instant.fromEpochMilliseconds(key),
-        minWatts: min, maxWatts: max, avgWatts: sum / rows.length,
-        indoorTempC: tempSum / rows.length, tankTempC: tankSum / rows.length
+        minWatts: min, maxWatts: max, 
+        avgWatts: sum / rows.length,
+        indoorTempC: indoorTempSum / rows.length, 
+        outdoorTempC: outdoorTempSum / rows.length, 
+        tankTempC: tankSum / rows.length,
       });
     }
 

@@ -1,10 +1,10 @@
-// domain/archetype_test.go
 package domain
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/tinywideclouds/go-maths/pkg/probability"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,15 +37,15 @@ scenarios:
           operator: 4
           value: "16.5"
       fatigue_rule:
-        lockout_duration: "30m"
+        lockout_duration: "30m" # Beautiful new scalar shorthand
     actions:
       - device_id: "central_heating"
         state: 1
         parameters:
           duration:
-            type: 2
-            min: 1.0
-            max: 2.5
+            type: "uniform" # Updated to new go-maths string enum
+            min: "1.0"      # Updated to flexible string parsing
+            max: "2.5"
 `
 
 	var archetype NodeArchetype
@@ -85,7 +85,17 @@ scenarios:
 	if len(trigger.BaseConditions) != 1 || trigger.BaseConditions[0].ContextKey != "indoor_temp_c" {
 		t.Errorf("Expected BaseCondition on indoor_temp_c")
 	}
-	if trigger.FatigueRule.LockoutDuration != "30m" {
-		t.Errorf("Expected FatigueRule lockout to be '30m', got '%s'", trigger.FatigueRule.LockoutDuration)
+
+	// Ensure the pure math parser picked up the lockout duration
+	if trigger.FatigueRule.LockoutDuration.Type != probability.ConstantDistribution {
+		t.Errorf("Expected Constant distribution for lockout, got %v", trigger.FatigueRule.LockoutDuration.Type)
+	}
+
+	actionParam := archetype.Scenarios[0].Actions[0].Parameters["duration"]
+	if actionParam.Type != probability.UniformDistribution {
+		t.Errorf("Expected Uniform distribution in action parameter, got %v", actionParam.Type)
+	}
+	if actionParam.Min != 1.0 || actionParam.Max != 2.5 {
+		t.Errorf("Expected parameter bounds 1.0 to 2.5, got %f to %f", actionParam.Min, actionParam.Max)
 	}
 }

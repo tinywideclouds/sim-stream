@@ -1,10 +1,13 @@
-// domain/actor.go
 package domain
 
+import (
+	"github.com/tinywideclouds/go-maths/pkg/probability"
+)
+
 // BiologyConfig defines the template bounds for a persona's metabolism.
-// We reuse ProbabilityDistribution so the Builder can easily sample it.
+// Used in the Catalog blueprints to roll variance upon spawning.
 type BiologyConfig struct {
-	DecayPerHour     ProbabilityDistribution `yaml:"decay_per_hour"`
+	DecayPerHour     probability.SampleSpace `yaml:"decay_per_hour"`
 	PhaseMultipliers map[string]float64      `yaml:"phase_multipliers"`
 }
 
@@ -18,31 +21,17 @@ type InstantiatedBiology struct {
 type Actor struct {
 	ActorID string `yaml:"actor_id"`
 	Type    string `yaml:"type"` // "adult", "child", "system"
-
-	// AIModel dictates the overarching orchestrator ("routine", "utility", or "stable"). Defaults to "routine".
 	AIModel string `yaml:"ai_model"`
 
-	// ----------------------------------------------------
-	// Routine State (Sequential tasks)
-	// ----------------------------------------------------
 	Routines []ActorRoutine `yaml:"routines"`
 
-	// ----------------------------------------------------
-	// Utility State (Biological/Psychological)
-	// ----------------------------------------------------
-
-	// StartingMeters now uses ProbabilityDistribution so the Builder can apply Gaussian variance upon spawning.
+	// StartingMeters holds the exact rolled float values for this specific actor at spawn time.
+	// (The CatalogPersona uses SampleSpace to generate these).
 	StartingMeters map[string]float64 `yaml:"starting_meters"`
 
-	// Biology holds the actor's unique, instantiated metabolism after the Builder rolls it.
 	Biology map[string]InstantiatedBiology `yaml:"biology"`
 
-	// SoftmaxTemperature controls the Roulette Wheel variance.
 	SoftmaxTemperature float64 `yaml:"softmax_temperature"`
 
-	// ----------------------------------------------------
-	// Stable State (Societal Rails)
-	// ----------------------------------------------------
-	// Phases define the macro-blocks the actor is expected to follow.
 	Phases []Phase `yaml:"phases"`
 }

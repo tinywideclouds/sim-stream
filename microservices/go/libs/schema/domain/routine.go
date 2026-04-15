@@ -1,4 +1,3 @@
-// domain/routine.go
 package domain
 
 // RoutineTemplate represents a rigid list of sequential tasks.
@@ -9,10 +8,11 @@ type RoutineTemplate struct {
 }
 
 // ActorRoutine maps an actor to a routine with specific fuzzy daily bounds.
+// Now powered by the go-maths DynamicDistribution!
 type ActorRoutine struct {
-	RoutineID string                  `yaml:"routine_id"`
-	Trigger   ProbabilityDistribution `yaml:"trigger"`
-	Deadline  ProbabilityDistribution `yaml:"deadline"`
+	RoutineID string              `yaml:"routine_id"`
+	Trigger   DynamicDistribution `yaml:"trigger"`
+	Deadline  DynamicDistribution `yaml:"deadline"`
 }
 
 // CollectiveEvent forces multiple actors to synchronize their routines.
@@ -30,5 +30,5 @@ type CollectiveEvent struct {
 type DependentActor struct {
 	ActorID        string  `yaml:"actor_id"`
 	FrictionWeight float64 `yaml:"friction_weight"`
-	PatienceLimit  string  `yaml:"patience_limit"`
+	PatienceLimit  string  `yaml:"patience_limit"` // E.g., "15m"
 }

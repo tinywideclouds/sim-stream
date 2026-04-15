@@ -11,10 +11,10 @@ collective_events:
       abort_conditions:
         - context_key: "weather.precipitation_mm"
           operator: ">"
-          value: "1.0" # A little drizzle is okay, but not steady rain
+          value: "1.0" 
         - context_key: "weather.external_temp_c"
           operator: "<"
-          value: "8.0" # Too cold for the kids
+          value: "8.0" 
       lead_requirement: "adult"
       dependent_rules:
         - type: "child"

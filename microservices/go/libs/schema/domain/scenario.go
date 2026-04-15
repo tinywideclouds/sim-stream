@@ -1,8 +1,12 @@
 package domain
 
+import (
+	"github.com/tinywideclouds/go-maths/pkg/probability"
+)
+
 // FatigueRule prevents a scenario from triggering continuously.
 type FatigueRule struct {
-	LockoutDuration string `yaml:"lockout_duration"`
+	LockoutDuration probability.SampleSpace `yaml:"lockout_duration"`
 }
 
 // ScenarioTrigger defines when an ambient/autonomous scenario fires.
@@ -16,7 +20,7 @@ type ScenarioTrigger struct {
 type ScenarioAction struct {
 	DeviceID   string                             `yaml:"device_id"`
 	State      DeviceState                        `yaml:"state"`
-	Parameters map[string]ProbabilityDistribution `yaml:"parameters"`
+	Parameters map[string]probability.SampleSpace `yaml:"parameters"`
 }
 
 // ScenarioTemplate is an independent action (or chain of actions) like boiling a kettle or a thermostat.

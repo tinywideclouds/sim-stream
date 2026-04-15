@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
+	"github.com/tinywideclouds/go-maths/pkg/probability"
 	"github.com/tinywideclouds/go-sim-schema/domain"
 )
 
@@ -21,10 +21,10 @@ type GenerationRequest struct {
 
 type HouseholdGenerator struct {
 	registry *Registry
-	sampler  *generator.Sampler
+	sampler  *probability.DistributionSampler
 }
 
-func NewHouseholdGenerator(reg *Registry, samp *generator.Sampler) *HouseholdGenerator {
+func NewHouseholdGenerator(reg *Registry, samp *probability.DistributionSampler) *HouseholdGenerator {
 	return &HouseholdGenerator{
 		registry: reg,
 		sampler:  samp,
@@ -32,7 +32,6 @@ func NewHouseholdGenerator(reg *Registry, samp *generator.Sampler) *HouseholdGen
 }
 
 func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchetype, error) {
-	// [Step 1 and 2 (Water and Hardware) remain identical... omitted for brevity if needed, but here is the full code]
 	var selectedWater domain.WaterSystemTemplate
 	var candidateWaters []domain.WaterSystemTemplate
 
@@ -46,8 +45,9 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 	}
 
 	if len(candidateWaters) > 0 {
-		rollDist := domain.ProbabilityDistribution{Type: domain.DistributionTypeUniform, Min: 0.0, Max: float64(len(candidateWaters))}
-		roll, _ := g.sampler.Float64(rollDist)
+		// Replace old DistributionType strings with pure math spaces
+		rollDist := probability.SampleSpace{Type: probability.UniformDistribution, Min: 0.0, Max: float64(len(candidateWaters))}
+		roll := g.sampler.Sample(rollDist)
 		idx := int(roll)
 		if idx >= len(candidateWaters) {
 			idx = len(candidateWaters) - 1
@@ -92,8 +92,8 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 			return nil, fmt.Errorf("no devices found in registry for tag: %s", tag)
 		}
 
-		rollDist := domain.ProbabilityDistribution{Type: domain.DistributionTypeUniform, Min: 0.0, Max: float64(len(candidates))}
-		roll, _ := g.sampler.Float64(rollDist)
+		rollDist := probability.SampleSpace{Type: probability.UniformDistribution, Min: 0.0, Max: float64(len(candidates))}
+		roll := g.sampler.Sample(rollDist)
 		idx := int(roll)
 		if idx >= len(candidates) {
 			idx = len(candidates) - 1
@@ -113,18 +113,14 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 	for _, pReq := range req.PersonaRequirements {
 		count := pReq.Min
 		if pReq.Max > pReq.Min {
-			dist := domain.ProbabilityDistribution{Type: domain.DistributionTypeUniform, Min: float64(pReq.Min), Max: float64(pReq.Max + 1)}
-			roll, _ := g.sampler.Float64(dist)
-			count = int(roll)
+			dist := probability.SampleSpace{Type: probability.UniformDistribution, Min: float64(pReq.Min), Max: float64(pReq.Max + 1)}
+			count = int(g.sampler.Sample(dist))
 		}
 
-		// Gather weighted pool with prefix filtering
 		var pool []CatalogPersona
 		totalWeight := 0
 		for _, p := range g.registry.Personas {
 			if p.Type == pReq.Type {
-
-				// Apply Allowed Filters
 				if len(pReq.AllowedPrefixes) > 0 {
 					matched := false
 					for _, prefix := range pReq.AllowedPrefixes {
@@ -138,7 +134,6 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 					}
 				}
 
-				// Apply Exclude Filters
 				excluded := false
 				for _, prefix := range pReq.ExcludePrefixes {
 					if strings.HasPrefix(p.ID, prefix) {
@@ -164,8 +159,8 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 		}
 
 		for i := 0; i < count; i++ {
-			rollDist := domain.ProbabilityDistribution{Type: domain.DistributionTypeUniform, Min: 0.0, Max: float64(totalWeight)}
-			roll, _ := g.sampler.Float64(rollDist)
+			rollDist := probability.SampleSpace{Type: probability.UniformDistribution, Min: 0.0, Max: float64(totalWeight)}
+			roll := g.sampler.Sample(rollDist)
 
 			var selected CatalogPersona
 			accum := 0.0
@@ -181,12 +176,10 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 				}
 			}
 
+			// Instantiating pure mathematical floats from the Schema's SampleSpaces
 			startingMeters := make(map[string]float64)
 			for m, dist := range selected.StartingMeters {
-				val, err := g.sampler.Float64(dist)
-				if err != nil {
-					val = 50.0
-				}
+				val := g.sampler.Sample(dist)
 				if val > 100.0 {
 					val = 100.0
 				}
@@ -198,10 +191,7 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 
 			biology := make(map[string]domain.InstantiatedBiology)
 			for m, bioCfg := range selected.Biology {
-				decay, err := g.sampler.Float64(bioCfg.DecayPerHour)
-				if err != nil {
-					decay = 5.0
-				}
+				decay := g.sampler.Sample(bioCfg.DecayPerHour)
 				if decay < 0.0 {
 					decay = 0.0
 				}
@@ -288,8 +278,8 @@ func (g *HouseholdGenerator) Generate(req GenerationRequest) (*domain.NodeArchet
 			continue
 		}
 
-		rollDist := domain.ProbabilityDistribution{Type: domain.DistributionTypeUniform, Min: 0.0, Max: 1.0}
-		roll, _ := g.sampler.Float64(rollDist)
+		rollDist := probability.SampleSpace{Type: probability.UniformDistribution, Min: 0.0, Max: 1.0}
+		roll := g.sampler.Sample(rollDist)
 		if roll > cEvent.Selection.Weight {
 			continue
 		}

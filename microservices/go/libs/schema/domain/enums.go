@@ -1,13 +1,8 @@
 package domain
 
-// DistributionType defines the statistical curve used for random sampling.
-type DistributionType string
-
-const (
-	DistributionTypeUnspecified DistributionType = ""
-	DistributionTypeNormal      DistributionType = "normal"
-	DistributionTypeUniform     DistributionType = "uniform"
-	DistributionTypeConstant    DistributionType = "constant"
+import (
+	"fmt"
+	"gopkg.in/yaml.v3"
 )
 
 // DeviceCategory classifies what the appliance does for thermodynamic grouping.
@@ -47,6 +42,53 @@ const (
 	ConditionOperatorLte
 )
 
+// UnmarshalYAML intercepts the parser to convert the human-readable string
+// operators in the YAML (like ">") directly into the typed ConditionOperator enum.
+func (c *ConditionOperator) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err != nil {
+		return err
+	}
+
+	switch s {
+	case "==":
+		*c = ConditionOperatorEq
+	case "!=":
+		*c = ConditionOperatorNeq
+	case ">":
+		*c = ConditionOperatorGt
+	case "<":
+		*c = ConditionOperatorLt
+	case ">=":
+		*c = ConditionOperatorGte
+	case "<=":
+		*c = ConditionOperatorLte
+	default:
+		return fmt.Errorf("unknown condition operator: %q", s)
+	}
+	return nil
+}
+
+// MarshalYAML ensures the compiler writes the string format to the generated households.
+func (c ConditionOperator) MarshalYAML() (interface{}, error) {
+	switch c {
+	case ConditionOperatorEq:
+		return "==", nil
+	case ConditionOperatorNeq:
+		return "!=", nil
+	case ConditionOperatorGt:
+		return ">", nil
+	case ConditionOperatorLt:
+		return "<", nil
+	case ConditionOperatorGte:
+		return ">=", nil
+	case ConditionOperatorLte:
+		return "<=", nil
+	default:
+		return "", fmt.Errorf("unknown condition operator int: %d", c)
+	}
+}
+
 // DeviceState tracks the physical state of hardware.
 type DeviceState int
 
@@ -74,5 +116,13 @@ const (
 	ActorStateAsleep                   // Will not trigger ambient events
 	ActorStateHomeFree                 // Awake, at home, and idle (Will trigger ambient events)
 	ActorStateRoutineActive            // Currently executing a sequential task list
-	ActorStateAway                     // Physically not in the simulation node (Ghosted)
+	ActorStateAway                     // Out of the house (Simulation paused for this actor)
+)
+
+// SharingType defines how multiple actors interact with the same device.
+type SharingType string
+
+const (
+	SharingFreeRider SharingType = "free_rider" // Joins without extending duration (e.g., watching TV)
+	SharingScalable  SharingType = "scalable"   // Extends duration per person (e.g., cooking more food)
 )

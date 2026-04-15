@@ -7,7 +7,7 @@ collective_events:
     template:
       event_id: "weekend_deep_clean"
       action: "vacuum_and_dust"
-      base_fragility: 0.20 # Often procrastinated away
+      base_fragility: 0.20
       abort_conditions: []
       lead_requirement: "adult"
       dependent_rules:

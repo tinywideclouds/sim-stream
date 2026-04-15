@@ -1,4 +1,3 @@
-# catalogs/schedules/evening_events.yaml
 collective_events:
   - id: "night_out_drinks"
     selection:
@@ -7,11 +6,11 @@ collective_events:
     template:
       event_id: "night_out_drinks"
       action: "go_to_pub"
-      base_fragility: 0.15 # Sometimes plans just fall through
+      base_fragility: 0.15
       abort_conditions:
-        - key: "weather.precipitation_mm"
+        - context_key: "weather.precipitation_mm" # Fixed key name
           operator: ">"
-          value: "5.0" # Cancel only if it's pouring
+          value: "5.0" 
       lead_requirement: "adult"
       dependent_rules:
         - type: "adult"

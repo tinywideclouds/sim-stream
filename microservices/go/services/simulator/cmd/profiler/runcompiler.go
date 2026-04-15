@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/tinywideclouds/go-maths/pkg/probability"
 	"github.com/tinywideclouds/go-power-simulator/internal/factory"
-	"github.com/tinywideclouds/go-sim-probability/pkg/generator"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,8 +44,10 @@ func main() {
 
 	var seed [32]byte
 	copy(seed[:], []byte(time.Now().String()))
-	sampler := generator.NewSampler(seed)
-	builder := factory.NewHouseholdGenerator(reg, sampler)
+
+	baseSampler := probability.NewSampler(seed)
+	distSampler := probability.NewDistributionSampler(baseSampler)
+	builder := factory.NewHouseholdGenerator(reg, distSampler)
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var recipes []factory.CatalogComposition
@@ -61,7 +63,6 @@ func main() {
 
 	successCount := 0
 	for i := 1; i <= *totalRuns; i++ {
-		// 1. Weighted Recipe Selection
 		roll := rng.Intn(totalRecipeWeight)
 		var recipe factory.CatalogComposition
 		accum := 0
@@ -77,7 +78,6 @@ func main() {
 			}
 		}
 
-		// 2. Just pass the requirements straight to the Builder!
 		req := factory.GenerationRequest{
 			ArchetypeID:            fmt.Sprintf("%s_%03d", recipe.ID, i),
 			PersonaRequirements:    recipe.PersonaRequirements,

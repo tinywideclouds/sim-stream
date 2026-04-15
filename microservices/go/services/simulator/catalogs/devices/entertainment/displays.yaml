@@ -1,9 +1,8 @@
-# catalogs/devices/entertainment/displays.yaml
 devices:
   - id: "budget_led_tv"
     tags: ["television", "entertainment", "low_draw"]
     template:
-      taxonomy: { category: 4 } # Entertainment
+      taxonomy: { category: 4, class_name: "television" }
       electrical_profile: 
         type: 1
         max_watts: 55.0
@@ -12,8 +11,8 @@ devices:
   - id: "large_oled_tv"
     tags: ["television", "entertainment", "high_draw"]
     template:
-      taxonomy: { category: 4 }
+      taxonomy: { category: 4, class_name: "television" }
       electrical_profile: 
         type: 1
         max_watts: 200.0
-        standby_watts: 15.0 # Smart TVs pull heavily even when "off"
+        standby_watts: 15.0

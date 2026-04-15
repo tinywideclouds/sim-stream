@@ -82,7 +82,7 @@ message ProbabilityDistribution {
   double max = 6;                  // For uniform
   
   repeated DistributionModifier modifiers = 7;
-  string timeframe = 8
+  string timeframe = 8;
 }
 
 // ---------------------------------------------------------
@@ -111,11 +111,16 @@ message DeviceProfile {
   string cooldown_duration = 4;    // e.g., "5m" - Device lock preventing rapid cycling
 }
 
+message ThermalProfile {
+  double radiated_watts = 1;
+}
+
 message DeviceTemplate {
   string device_id = 1;
   DeviceTaxonomy taxonomy = 2;
   map<string, string> specifics = 3; // e.g., {"energy_rating": "A", "volume_liters": "1.5"}
   DeviceProfile electrical_profile = 4;
+  ThermalProfile thermal_profile = 5;
 }
 
 message Trigger {

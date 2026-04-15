@@ -1,11 +1,19 @@
 package domain
 
+import (
+	"github.com/tinywideclouds/go-maths/pkg/probability"
+)
+
 // DeviceProfile defines the electrical load characteristics of a device.
 type DeviceProfile struct {
-	Type             ProfileType `yaml:"type"`
-	MaxWatts         float64     `yaml:"max_watts"`
-	StandbyWatts     float64     `yaml:"standby_watts"`
-	CooldownDuration string      `yaml:"cooldown_duration"`
+	Type             ProfileType             `yaml:"type"`
+	MaxWatts         float64                 `yaml:"max_watts"`
+	StandbyWatts     float64                 `yaml:"standby_watts"`
+	CooldownDuration probability.SampleSpace `yaml:"cooldown_duration"`
+}
+
+type ThermalProfile struct {
+	RadiatedWatts float64 `yaml:"radiated_watts"`
 }
 
 // WaterProfile defines the plumbing load characteristics, splitting hot and cold.
@@ -26,5 +34,6 @@ type DeviceTemplate struct {
 	Taxonomy          DeviceTaxonomy    `yaml:"taxonomy"`
 	Specifics         map[string]string `yaml:"specifics"`
 	ElectricalProfile DeviceProfile     `yaml:"electrical_profile"`
-	WaterProfile      *WaterProfile     `yaml:"water_profile"` // Pointer allows devices with no plumbing
+	WaterProfile      *WaterProfile     `yaml:"water_profile" `
+	ThermalProfile    *ThermalProfile   `yaml:"thermal_profile"`
 }
